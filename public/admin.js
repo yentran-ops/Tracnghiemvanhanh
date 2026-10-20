@@ -5,6 +5,22 @@
   let key = '';
   try { key = sessionStorage.getItem('tng_admin') || ''; } catch {}
   let bank = [], users = [];
+  const META = { sets: [], docs: [] };
+  const setName = (id) => (META.sets.find((x) => x.id === (id || 'quytrinh')) || { name: id || 'Quy trình – Quy định' }).name;
+  async function loadMeta() {
+    const [s, idx] = await Promise.all([api('settings'), TNGDocs.loadIndex().catch(() => [])]);
+    META.sets = s.sets; META.docs = idx;
+    const setOpts = META.sets.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+    document.querySelectorAll('.setSel').forEach((el) => (el.innerHTML = setOpts));
+    const cur = $('#qSet').value;
+    $('#qSet').innerHTML = '<option value="">Tất cả bộ câu hỏi</option>' + setOpts; $('#qSet').value = cur;
+    const groups = [...new Set(idx.map((x) => x.group))];
+    const docOpts = groups.map((g) => `<optgroup label="${esc(g)}">${idx.filter((x) => x.group === g).map((x) => `<option value="${esc(x.id)}">${esc(x.title)}</option>`).join('')}</optgroup>`).join('');
+    document.querySelectorAll('.docSel').forEach((el) => { const first = el.options[0].outerHTML; el.innerHTML = first + docOpts; });
+    $('#dGroups').innerHTML = groups.map((g) => `<option value="${esc(g)}">`).join('');
+  }
+  // Nguồn hiển thị = tên văn bản · điều khoản
+  const buildRef = (docId, art) => { const d = META.docs.find((x) => x.id === docId); const a = String(art || '').trim(); return d ? d.title + (a ? ' · ' + a : '') : a; };
 
   async function api(action, body) {
     const r = await fetch(`/api/admin?action=${action}`, {
@@ -28,7 +44,7 @@
   $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     key = e.target.pw.value;
-    try { await loadBank(); try { sessionStorage.setItem('tng_admin', key); } catch {} enter(); }
+    try { await loadBank(); try { sessionStorage.setItem('tng_admin', key); } catch {} await loadMeta().catch(() => {}); enter(); }
     catch (err) { const m = $('#loginMsg'); m.hidden = false; m.textContent = err.message; }
   });
   function enter() { $('#loginView').hidden = true; $('#helpView').hidden = false; $('#adminNav').hidden = false; $('#backHome').hidden = true; tab('questions'); }
@@ -37,8 +53,8 @@
   $('#adminNav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) tab(b.dataset.tab); });
   function tab(t) {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
-    ['questions', 'users', 'results', 'board', 'settings'].forEach((x) => ($(`#tab-${x}`).hidden = t !== x));
-    ({ users: loadUsers, results: loadResults, board: loadBoard, settings: loadSettings }[t] || renderBank)();
+    ['questions', 'users', 'results', 'board', 'docs', 'settings'].forEach((x) => ($(`#tab-${x}`).hidden = t !== x));
+    ({ users: loadUsers, results: loadResults, board: loadBoard, docs: loadDocs, settings: loadSettings }[t] || renderBank)();
   }
 
   // ---------- Xếp hạng ----------
@@ -73,15 +89,15 @@
   $('#abDate').addEventListener('change', loadBoard);
 
   // ---------- Cài đặt ----------
-  let sDepts = [];
+  let sDepts = [], sSets = [], setCounts = {};
   async function loadSettings() {
     try {
       const j = await api('settings'); const f = $('#sForm');
-      f.quizSize.value = j.quizSize; f.minutes.value = Math.round(j.timeLimit / 60); sDepts = [...j.depts];
+      f.quizSize.value = j.quizSize; f.minutes.value = Math.round(j.timeLimit / 60); sDepts = [...j.depts]; sSets = j.sets.map((x) => ({ ...x })); setCounts = j.setCounts || {}; META.sets = j.sets;
       f.quizSize.max = Math.min(j.limits.quizMax, j.bankSize);
       $('#sQHint').textContent = `Ngân hàng hiện có ${j.bankSize} câu đang dùng (tối đa ${Math.min(j.limits.quizMax, j.bankSize)} câu/đề).`;
       $('#sSummary').textContent = `Hiện tại: ${j.quizSize} câu · ${Math.round(j.timeLimit / 60)} phút · ${j.depts.length} phòng ban`;
-      $('#sMsg').hidden = true; renderDepts();
+      $('#sMsg').hidden = true; renderDepts(); renderSets();
     } catch (err) { toast(err.message); }
   }
   function renderDepts() {
@@ -99,11 +115,36 @@
     if (sDepts.some((x) => x.toLowerCase() === v.toLowerCase())) return toast('Phòng ban đã có');
     sDepts.push(v); $('#sNewDept').value = ''; renderDepts();
   };
+  function renderSets() {
+    $('#sSets').innerHTML = sSets.map((x, i) => `<tr>
+      <td><input type="checkbox" data-s="active" data-i="${i}" ${x.active ? 'checked' : ''}></td>
+      <td><input data-s="name" data-i="${i}" value="${esc(x.name)}" maxlength="60" style="min-width:180px"></td>
+      <td class="r">${setCounts[x.id] || 0}</td>
+      <td class="r"><input type="number" min="0" max="100" data-s="count" data-i="${i}" value="${x.count || 0}" style="width:80px"></td>
+      <td class="r">${x.builtin ? '<span class="muted small">Có sẵn</span>' : `<button type="button" class="btn ghost sm" data-del="${i}">Gỡ</button>`}</td></tr>`).join('');
+  }
+  $('#sSets').addEventListener('input', (e) => {
+    const el = e.target.closest('[data-s]'); if (!el) return;
+    const x = sSets[el.dataset.i], k = el.dataset.s;
+    x[k] = k === 'active' ? el.checked : k === 'count' ? Math.max(0, Number(el.value) || 0) : el.value;
+  });
+  $('#sSets').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    const x = sSets[b.dataset.del];
+    if (setCounts[x.id]) return toast(`Bộ "${x.name}" còn ${setCounts[x.id]} câu, hãy chuyển hoặc xóa câu trước`);
+    confirmBox(`Gỡ bộ câu hỏi "${x.name}"?`, 'Bộ này sẽ bị gỡ sau khi bấm Lưu cài đặt.', () => { sSets.splice(b.dataset.del, 1); renderSets(); }, 'Gỡ');
+  });
+  $('#sAddSet').onclick = () => {
+    const v = $('#sNewSet').value.replace(/\s+/g, ' ').trim(); if (!v) return;
+    if (sSets.some((x) => x.name.toLowerCase() === v.toLowerCase())) return toast('Bộ câu hỏi đã có');
+    sSets.push({ id: '', name: v, active: true, count: 0 }); $('#sNewSet').value = ''; renderSets();
+    toast('Đã thêm – bấm Lưu cài đặt để tạo bộ');
+  };
   $('#sNewDept').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#sAddDept').click(); } });
   $('#sForm').addEventListener('submit', async (e) => {
     e.preventDefault(); const f = e.target;
     try {
-      await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, depts: sDepts });
+      await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, depts: sDepts, sets: sSets });
       toast('Đã lưu cài đặt'); loadSettings();
     } catch (err) { const m = $('#sMsg'); m.hidden = false; m.textContent = err.message; }
   });
@@ -117,15 +158,16 @@
     $('#topicList').innerHTML = topics.map((t) => `<option value="${esc(t)}">`).join('');
     const on = bank.filter((q) => !q.disabled).length;
     $('#qSummary').textContent = `${bank.length} câu · ${on} đang dùng · ${bank.length - on} đã tắt · ${bank.filter((q) => q.source === 'custom').length} câu thêm mới`;
-    const s = $('#qSearch').value.trim().toLowerCase(), tp = sel.value, st = $('#qStatus').value;
+    const s = $('#qSearch').value.trim().toLowerCase(), tp = sel.value, st = $('#qStatus').value, qs = $('#qSet').value;
     const list = bank.filter((q) =>
+      (!qs || (q.set || 'quytrinh') === qs) &&
       (!tp || q.topic === tp) &&
       (!s || (q.q + ' ' + q.ref + ' ' + q.o.join(' ')).toLowerCase().includes(s)) &&
       (!st || (st === 'on' && !q.disabled) || (st === 'off' && q.disabled) || (st === 'edited' && q.edited) || (st === 'custom' && q.source === 'custom')));
     $('#qList').innerHTML = list.length ? list.map((q) => `
       <div class="qi ${q.disabled ? 'off' : ''}">
         <div>
-          <span class="chip">${esc(q.topic)}</span>${q.source === 'custom' ? '<span class="badge c">Thêm mới</span>' : ''}${q.edited ? '<span class="badge e">Đã sửa</span>' : ''}${q.disabled ? '<span class="badge x">Đã tắt</span>' : ''}
+          <span class="badge s">${esc(setName(q.set))}</span><span class="chip">${esc(q.topic)}</span>${q.source === 'custom' ? '<span class="badge c">Thêm mới</span>' : ''}${q.edited ? '<span class="badge e">Đã sửa</span>' : ''}${q.disabled ? '<span class="badge x">Đã tắt</span>' : ''}
           <div class="qi-q">${esc(q.q)}</div>
           <div class="qi-o"><b>✓ ${esc(q.o[0])}</b><br>✗ ${q.o.slice(1).map(esc).join('<br>✗ ')}</div>
           <div class="ref" style="margin-top:6px">📖 ${esc(q.ref || '—')} · <span class="muted">${q.id}</span></div>
@@ -138,7 +180,7 @@
         </div>
       </div>`).join('') : '<p class="empty">Không có câu hỏi phù hợp.</p>';
   }
-  ['#qSearch', '#qTopic', '#qStatus'].forEach((s) => $(s).addEventListener('input', renderBank));
+  ['#qSearch', '#qTopic', '#qStatus', '#qSet'].forEach((s) => $(s).addEventListener('input', renderBank));
   $('#qList').addEventListener('click', (e) => {
     const b = e.target.closest('[data-a]'); if (!b) return;
     const q = bank.find((x) => x.id === b.dataset.id);
@@ -155,16 +197,23 @@
     editing = q || null;
     const f = $('#qForm'); f.reset(); $('#qmMsg').hidden = true;
     $('#qmTitle').textContent = q ? `Sửa câu hỏi ${q.id}` : 'Thêm câu hỏi';
-    if (q) { f.topic.value = q.topic; f.ref.value = q.ref || ''; f.q.value = q.q; q.o.forEach((o, i) => (f['o' + i].value = o)); }
+    f.set.value = q ? q.set || 'quytrinh' : $('#qSet').value || META.sets[0]?.id || 'quytrinh';
+    if (q) {
+      f.topic.value = q.topic; f.ref.value = q.ref || ''; f.q.value = q.q; q.o.forEach((o, i) => (f['o' + i].value = o));
+      const [head, tail = ''] = String(q.ref || '').split('·');
+      const dd = META.docs.find((x) => head.includes(x.refKey)); f.doc.value = dd ? dd.id : ''; f.art.value = tail.trim();
+    }
     $('#qModal').hidden = false;
   }
+  $('#qForm').doc.addEventListener('change', () => { const f = $('#qForm'); f.ref.value = buildRef(f.doc.value, f.art.value); });
+  $('#qForm').art.addEventListener('input', () => { const f = $('#qForm'); if (f.doc.value) f.ref.value = buildRef(f.doc.value, f.art.value); });
   $('#addQ').onclick = () => openForm(null);
   $('#qmCancel').onclick = () => ($('#qModal').hidden = true);
   $('#qForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
     try {
-      await api('saveQuestion', { id: editing?.id, topic: f.topic.value, ref: f.ref.value, q: f.q.value, o: [0, 1, 2, 3].map((i) => f['o' + i].value) });
+      await api('saveQuestion', { id: editing?.id, set: f.set.value, topic: f.topic.value, ref: f.ref.value, q: f.q.value, o: [0, 1, 2, 3].map((i) => f['o' + i].value) });
       $('#qModal').hidden = true; await loadBank(); renderBank(); toast('Đã lưu câu hỏi');
     } catch (err) { const m = $('#qmMsg'); m.hidden = false; m.textContent = err.message; }
   });
@@ -224,5 +273,79 @@
       async () => { try { const j = await api('deleteResults', { date: rDay, uks }); toast(`Đã xóa ${j.deleted} kết quả`); loadResults(); } catch (err) { toast(err.message); } }, 'Xóa');
   };
 
-  if (key) loadBank().then(enter).catch(() => {});
+  // ---------- Nhập câu hỏi hàng loạt ----------
+  function parseBulk() {
+    const f = $('#bForm');
+    return f.text.value.split(/\r?\n/).map((line, i) => ({ line, n: i + 1 })).filter((x) => x.line.trim()).map(({ line, n }) => {
+      const c = line.split(line.includes('\t') && !line.includes('|') ? '\t' : '|').map((x) => x.trim());
+      let ref = c[1] || '';
+      // Cột 2 chỉ ghi "Điều 5" → ghép với văn bản nguồn đã chọn; ghi đầy đủ thì giữ nguyên
+      if (f.doc.value && !META.docs.some((d) => ref.includes(d.refKey))) ref = buildRef(f.doc.value, ref);
+      return { line: n, topic: c[0], ref, q: c[2], o: c.slice(3, 7) };
+    });
+  }
+  function previewBulk() {
+    const items = parseBulk();
+    const bad = items.filter((x) => !x.topic || !x.q || x.o.length !== 4 || x.o.some((o) => !o)).map((x) => x.line);
+    $('#bPreview').innerHTML = items.length ? `Đọc được <b>${items.length}</b> câu${bad.length ? ` · <span style="color:var(--bad,#c0392b)">thiếu cột ở dòng ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}</span>` : ' · đủ 7 cột ✓'}` : '';
+  }
+  $('#bulkQ').onclick = () => { const f = $('#bForm'); f.reset(); f.set.value = $('#qSet').value || META.sets[0]?.id; $('#bMsg').hidden = true; $('#bPreview').textContent = ''; $('#bModal').hidden = false; };
+  $('#bCancel').onclick = () => ($('#bModal').hidden = true);
+  $('#bForm').text.addEventListener('input', previewBulk);
+  $('#bForm').doc.addEventListener('change', previewBulk);
+  $('#bForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const j = await api('bulkAdd', { set: e.target.set.value, items: parseBulk() });
+      $('#bModal').hidden = true; await loadBank(); renderBank(); toast(`Đã nhập ${j.added} câu hỏi`);
+    } catch (err) { const m = $('#bMsg'); m.hidden = false; m.textContent = err.message; }
+  });
+
+  // ---------- Tài liệu ----------
+  let docBlocks = null;
+  async function loadDocs() {
+    try {
+      TNGDocs.resetIndex();
+      await loadMeta();
+      const groups = [...new Set(META.docs.map((x) => x.group))];
+      $('#dList').innerHTML = groups.map((g) => `<h3 class="d-group">${esc(g)}</h3>` + META.docs.filter((x) => x.group === g).map((x) => `
+        <div class="d-item"><div><b>${esc(x.title)}</b><div class="muted small">Mã trích dẫn: <code>${esc(x.refKey)}</code> · ${x.pages || 1} trang${x.custom ? ' · tải lên ' + new Date(x.at).toLocaleDateString('vi-VN') : ''}</div></div>
+        <div class="d-act"><a class="btn ghost sm" href="/docs.html?doc=${encodeURIComponent(x.id)}" target="_blank">Xem</a><button class="btn ghost sm" data-dq="${esc(x.id)}">Thêm câu hỏi</button>${x.custom ? `<button class="btn danger sm" data-dd="${esc(x.id)}">Xóa</button>` : ''}</div></div>`).join('')).join('');
+    } catch (err) { toast(err.message); }
+  }
+  $('#dList').addEventListener('click', (e) => {
+    const q = e.target.closest('[data-dq]');
+    if (q) { $('#bulkQ').click(); $('#bForm').doc.value = q.dataset.dq; return; }
+    const b = e.target.closest('[data-dd]'); if (!b) return;
+    const d = META.docs.find((x) => x.id === b.dataset.dd);
+    confirmBox(`Xóa tài liệu "${d.title}"?`, 'Tài liệu sẽ bị gỡ khỏi trang Tài liệu. Câu hỏi đã tạo vẫn giữ nguyên nhưng không còn hiện đoạn trích của tài liệu này. Không khôi phục được.', async () => {
+      try { await api('deleteDoc', { id: d.id }); toast('Đã xóa tài liệu'); loadDocs(); } catch (err) { toast(err.message); }
+    }, 'Xóa');
+  });
+  $('#dForm').file.addEventListener('change', async (e) => {
+    const file = e.target.files[0], f = $('#dForm'); docBlocks = null; $('#dMsg').hidden = true;
+    if (!file) return;
+    if (!f.title.value) f.title.value = file.name.replace(/\.(pdf|docx|txt)$/i, '');
+    if (!f.refKey.value) { const m = file.name.match(/(\d{3})-\d{4}-Q[ĐD]/i); if (m) f.refKey.value = `QĐ ${m[1]}`; }
+    $('#dPreview').textContent = 'Đang đọc file…';
+    try {
+      docBlocks = TNGDocBuild.toBlocks(await TNGDocBuild.readFile(file));
+      const arts = new Set(docBlocks.map((x) => x.art).filter(Boolean));
+      $('#dPreview').innerHTML = docBlocks.length
+        ? `Đọc được <b>${docBlocks.length}</b> đoạn, <b>${arts.size}</b> Điều/Mục, ${Math.max(...docBlocks.map((x) => x.page))} trang. Đoạn đầu: <i>${esc(docBlocks.slice(0, 2).map((x) => x.text).join(' … ').slice(0, 160))}</i>`
+        : '<span style="color:var(--bad,#c0392b)">Không đọc được chữ trong file (có thể là ảnh scan).</span>';
+    } catch (err) { $('#dPreview').textContent = ''; const m = $('#dMsg'); m.hidden = false; m.textContent = err.message; }
+  });
+  $('#dForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); const f = e.target;
+    if (!docBlocks || !docBlocks.length) { const m = $('#dMsg'); m.hidden = false; m.textContent = 'Chưa đọc được nội dung file. Hãy chọn lại file.'; return; }
+    $('#dSave').disabled = true;
+    try {
+      await api('saveDoc', { title: f.title.value, refKey: f.refKey.value, group: f.group.value, file: f.file.files[0]?.name, blocks: docBlocks });
+      f.reset(); docBlocks = null; $('#dPreview').textContent = ''; toast('Đã lưu tài liệu'); loadDocs();
+    } catch (err) { const m = $('#dMsg'); m.hidden = false; m.textContent = err.message; }
+    $('#dSave').disabled = false;
+  });
+
+  if (key) loadBank().then(() => loadMeta().catch(() => {})).then(enter).catch(() => {});
 })();

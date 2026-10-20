@@ -262,7 +262,7 @@
         deptSeg($('#deptSeg'), dept, (d) => (dept = d));
         deptSeg($('#mineDept'), mineDept, (d) => (mineDept = d));
       }
-      $('#intro').textContent = `Mỗi lượt ${j.quizSize} câu ngẫu nhiên từ ngân hàng ${j.bankSize} câu, trích nguyên văn bộ quy định khối Club và các quy chế sản phẩm. Sau khi nộp, mỗi đáp án đều kèm đoạn trích văn bản gốc để bạn đối chiếu.`;
+      $('#intro').textContent = `Mỗi lượt ${j.quizSize} câu ngẫu nhiên từ ngân hàng ${j.bankSize} câu, trích nguyên văn các quy trình, quy định và quy chế của The New Gym. Sau khi nộp, mỗi đáp án đều kèm đoạn trích văn bản gốc để bạn đối chiếu.`;
       const rows = j.rows, avg = rows.length ? rows.reduce((s, r) => s + r.score, 0) / rows.length : 0;
       $('#miniStats').innerHTML = `<div><small>Tham gia</small><b>${rows.length}</b></div><div><small>Điểm TB</small><b>${rows.length ? avg.toFixed(1) : '–'}</b></div><div><small>Cao nhất</small><b>${rows[0]?.score ?? '–'}</b></div>`;
       $('#miniBoard').innerHTML = rows.length ? rows.slice(0, 5).map((r, i) => `

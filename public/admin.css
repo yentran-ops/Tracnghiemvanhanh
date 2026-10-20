@@ -43,3 +43,15 @@ textarea,select{border:1px solid var(--line);background:var(--bg);border-radius:
 
 @media (max-width:900px){.topbar-in{flex-wrap:wrap;height:auto;padding-top:8px;padding-bottom:8px}#adminNav{width:100%;max-width:100%;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}#adminNav>*{flex:none}}
 
+
+.form .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.form .two{grid-template-columns:minmax(0,1fr)}}
+.badge.s{background:#eaf4fc;color:var(--brand-700,#2b6ea8);margin:0 6px 0 0}
+.d-group{margin:16px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.d-group:first-child{margin-top:0}
+.d-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.d-item b{font-weight:600;font-size:14px}
+.d-act{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+#sSets input[type=checkbox]{width:18px;height:18px}
+#sSets input:not([type=checkbox]){padding:8px 10px}
+

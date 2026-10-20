@@ -4,6 +4,7 @@ import { getBank, loadEdits, saveEdits } from '../lib/bank.js';
 import { getSettings, validSettings, saveSettings, LIMITS } from '../lib/settings.js';
 import { getJSON, getJSONMany, setJSON, del, hdel, hgetall, hincrMany, smembers, hasDb } from '../lib/store.js';
 import { today, clean, rankRows, userKey, qStatIncr } from '../lib/util.js';
+import { listCustomDocs, saveCustomDoc, deleteCustomDoc } from '../lib/docs-store.js';
 
 const BASE_IDS = new Set(QUESTIONS.map((q) => q.id));
 
@@ -48,11 +49,29 @@ export default async function handler(req, res) {
     }
     if (req.method === 'GET' && action === 'settings') {
       const [s, bank] = await Promise.all([getSettings(), getBank()]);
-      return res.json({ ...s, limits: LIMITS, bankSize: bank.length });
+      const setCounts = {};
+      bank.forEach((q) => { const k = q.set || 'quytrinh'; setCounts[k] = (setCounts[k] || 0) + 1; });
+      return res.json({ ...s, limits: LIMITS, bankSize: bank.length, setCounts });
+    }
+    if (req.method === 'GET' && action === 'docs') {
+      return res.json({ docs: await listCustomDocs() });
+    }
+    if (req.method === 'POST' && action === 'saveDoc') {
+      const r = await saveCustomDoc(b);
+      if (typeof r === 'string') return res.status(400).json({ error: r });
+      return res.json({ ok: true, doc: r });
+    }
+    if (req.method === 'POST' && action === 'deleteDoc') {
+      if (!(await deleteCustomDoc(String(b.id || '')))) return res.status(404).json({ error: 'Không tìm thấy tài liệu.' });
+      return res.json({ ok: true });
     }
     if (req.method === 'POST' && action === 'saveSettings') {
       const s = validSettings(b);
       if (typeof s === 'string') return res.status(400).json({ error: s });
+      // Không cho gỡ bộ câu hỏi còn câu hỏi
+      const keep = new Set(s.sets.map((x) => x.id));
+      const orphan = (await getBank({ includeDisabled: true })).filter((q) => !keep.has(q.set || 'quytrinh'));
+      if (orphan.length) return res.status(400).json({ error: `Không thể gỡ bộ câu hỏi đang còn ${orphan.length} câu. Hãy chuyển các câu sang bộ khác hoặc xóa trước.` });
       await saveSettings(s);
       return res.json({ ok: true, ...s });
     }
@@ -64,10 +83,28 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const e = await loadEdits();
+    const setIds = new Set((await getSettings()).sets.map((x) => x.id));
+    const pickSet = (v) => (setIds.has(v) ? v : null);
     switch (action) {
+      case 'bulkAdd': {
+        const set = pickSet(b.set);
+        if (!set) return res.status(400).json({ error: 'Vui lòng chọn bộ câu hỏi.' });
+        const items = Array.isArray(b.items) ? b.items.slice(0, 500) : [];
+        if (!items.length) return res.status(400).json({ error: 'Chưa có câu hỏi nào để nhập.' });
+        const errs = [], ok = [];
+        items.forEach((it, i) => { const q = validQuestion(it); if (typeof q === 'string') errs.push(`Dòng ${it.line || i + 1}: ${q}`); else ok.push(q); });
+        if (errs.length) return res.status(400).json({ error: errs.slice(0, 8).join('\n') + (errs.length > 8 ? `\n… và ${errs.length - 8} lỗi khác` : '') });
+        const t = Date.now();
+        ok.forEach((q, i) => e.added.push({ id: 'c' + (t + i).toString(36), ...q, set, createdAt: t }));
+        await saveEdits(e);
+        return res.json({ ok: true, added: ok.length });
+      }
       case 'saveQuestion': {
         const q = validQuestion(b);
         if (typeof q === 'string') return res.status(400).json({ error: q });
+        const set = pickSet(b.set);
+        if (b.set !== undefined && !set) return res.status(400).json({ error: 'Bộ câu hỏi không hợp lệ.' });
+        if (set) q.set = set;
         if (b.id && BASE_IDS.has(b.id)) {
           e.overrides[b.id] = { ...(e.overrides[b.id] || {}), ...q };
         } else if (b.id) {
@@ -75,7 +112,7 @@ export default async function handler(req, res) {
           if (i < 0) return res.status(404).json({ error: 'Không tìm thấy câu hỏi.' });
           e.added[i] = { ...e.added[i], ...q };
         } else {
-          e.added.push({ id: 'c' + Date.now().toString(36), ...q, createdAt: Date.now() });
+          e.added.push({ id: 'c' + Date.now().toString(36), set: 'quytrinh', ...q, createdAt: Date.now() });
         }
         break;
       }

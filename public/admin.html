@@ -20,6 +20,7 @@
       <button data-tab="users"><svg class="i"><use href="/icons.svg#users"/></svg>Nhân viên</button>
       <button data-tab="results"><svg class="i"><use href="/icons.svg#list"/></svg>Kết quả</button>
       <button data-tab="board"><svg class="i"><use href="/icons.svg#award"/></svg>Xếp hạng</button>
+      <button data-tab="docs"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</button>
       <button data-tab="settings"><svg class="i"><use href="/icons.svg#target"/></svg>Cài đặt</button>
       <a href="/" title="Về trang làm bài"><svg class="i"><use href="/icons.svg#left"/></svg>Trang làm bài</a>
       <button id="logout"><svg class="i"><use href="/icons.svg#logout"/></svg>Thoát</button>
@@ -62,11 +63,12 @@
   <section id="tab-questions" hidden>
     <div class="board-head">
       <div><h1>Ngân hàng câu hỏi</h1><p class="muted" id="qSummary"></p></div>
-      <button class="btn primary" id="addQ">+ Thêm câu hỏi</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="bulkQ">Nhập hàng loạt</button><button class="btn primary" id="addQ">+ Thêm câu hỏi</button></div>
     </div>
     <div class="card">
       <div class="filters">
         <input id="qSearch" placeholder="Tìm theo nội dung, nguồn…">
+        <select id="qSet"><option value="">Tất cả bộ câu hỏi</option></select>
         <select id="qTopic"><option value="">Tất cả chủ đề</option></select>
         <select id="qStatus"><option value="">Tất cả trạng thái</option><option value="on">Đang dùng</option><option value="off">Đã tắt</option><option value="edited">Đã chỉnh sửa</option><option value="custom">Câu thêm mới</option></select>
       </div>
@@ -111,6 +113,29 @@
     </div>
   </section>
 
+  <section id="tab-docs" hidden>
+    <div class="board-head"><div><h1>Tài liệu</h1><p class="muted">Văn bản dùng để trích dẫn đáp án và tra cứu ở trang Tài liệu.</p></div>
+      <a class="btn ghost" href="/docs.html" target="_blank">Mở trang Tài liệu</a></div>
+    <div class="ab-grid">
+      <div class="card">
+        <div class="card-h"><h2>Danh sách văn bản</h2></div>
+        <div id="dList"></div>
+      </div>
+      <form class="card form" id="dForm">
+        <h2 style="margin:0 0 4px">Thêm tài liệu mới</h2>
+        <p class="muted small" style="margin:0 0 8px">Hỗ trợ file <b>PDF có chữ</b> (không phải ảnh scan), <b>Word .docx</b> hoặc <b>.txt</b>. Hệ thống tự tách Chương / Điều / Mục để trích dẫn.</p>
+        <label>Chọn file<input type="file" name="file" accept=".pdf,.docx,.txt" required></label>
+        <label>Tên tài liệu<input name="title" required maxlength="160" placeholder="VD: QĐ 270/2026/QĐ-TND – Quy trình bán hàng"></label>
+        <div class="two"><label>Mã trích dẫn<input name="refKey" required maxlength="60" placeholder="VD: QĐ 270"></label>
+        <label>Nhóm<input name="group" list="dGroups" maxlength="60" placeholder="VD: Quy định nội bộ"></label></div><datalist id="dGroups"></datalist>
+        <p class="muted small" style="margin:0">Mã trích dẫn là cụm ngắn, duy nhất, phải xuất hiện trong ô "Nguồn" của câu hỏi để đáp án dẫn đúng về tài liệu này.</p>
+        <p class="small" id="dPreview"></p>
+        <div id="dMsg" class="msg" hidden></div>
+        <button class="btn primary big block" id="dSave">Đọc file và lưu tài liệu</button>
+      </form>
+    </div>
+  </section>
+
   <section id="tab-settings" hidden>
     <div class="board-head"><div><h1>Cài đặt đề thi</h1><p class="muted" id="sSummary"></p></div></div>
     <form id="sForm" class="set-grid">
@@ -127,6 +152,12 @@
         <div style="display:flex;gap:8px;margin-top:10px"><input id="sNewDept" placeholder="Tên phòng ban mới" maxlength="40"><button type="button" class="btn ghost" id="sAddDept">+ Thêm</button></div>
         <p class="muted small" style="margin-top:8px">Phòng ban bị gỡ sẽ không còn hiện ở màn hình đăng nhập làm bài. Kết quả cũ của phòng ban đó vẫn được giữ trên bảng xếp hạng.</p>
       </div>
+      <div class="card" style="grid-column:1/-1">
+        <h3>Bộ câu hỏi dùng khi phát đề</h3>
+        <p class="muted small" style="margin:-6px 0 12px">Bật bộ nào thì đề lấy câu từ bộ đó. Ô <b>Số câu cố định</b>: để 0 thì câu được trộn ngẫu nhiên giữa các bộ đang bật; ghi số (VD: 5) thì mỗi đề luôn có đúng số câu đó từ bộ này.</p>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Bật</th><th>Tên bộ câu hỏi</th><th class="r">Số câu hiện có</th><th class="r">Số câu cố định</th><th></th></tr></thead><tbody id="sSets"></tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><input id="sNewSet" placeholder="Tên bộ câu hỏi mới (VD: Quy trình bán hàng)" maxlength="60"><button type="button" class="btn ghost" id="sAddSet">+ Tạo bộ</button></div>
+      </div>
       <div class="set-actions"><div id="sMsg" class="msg" hidden></div><button class="btn primary big">Lưu cài đặt</button></div>
     </form>
   </section>
@@ -135,8 +166,11 @@
 <div class="modal" id="qModal" hidden><div class="modal-box wide">
   <h3 id="qmTitle">Thêm câu hỏi</h3>
   <form id="qForm" class="form">
-    <label>Chủ đề<input name="topic" list="topicList" required></label><datalist id="topicList"></datalist>
-    <label>Nguồn (văn bản · điều khoản)<input name="ref" placeholder="VD: QĐ 272/2026/QĐ-TND – Bộ quy định khối Club · Chương 4, Điều 10"></label>
+    <div class="two"><label>Bộ câu hỏi<select name="set" class="setSel" required></select></label>
+    <label>Chủ đề<input name="topic" list="topicList" required></label></div><datalist id="topicList"></datalist>
+    <div class="two"><label>Văn bản nguồn<select name="doc" class="docSel"><option value="">— Chọn văn bản —</option></select></label>
+    <label>Điều / khoản<input name="art" placeholder="VD: Chương 4, Điều 10 hoặc Điều 5"></label></div>
+    <label>Nguồn hiển thị (tự điền từ 2 ô trên, có thể sửa)<input name="ref" placeholder="VD: QĐ 272/2026/QĐ-TND – Bộ quy định khối Club · Chương 4, Điều 10"></label>
     <label>Câu hỏi<textarea name="q" rows="3" required></textarea></label>
     <label class="ok-l">✓ Đáp án đúng<input name="o0" required></label>
     <label>✗ Phương án sai 1<input name="o1" required></label>
@@ -147,8 +181,23 @@
     <div class="modal-act"><button type="button" class="btn ghost" id="qmCancel">Hủy</button><button class="btn primary">Lưu</button></div>
   </form>
 </div></div>
+<div class="modal" id="bModal" hidden><div class="modal-box wide">
+  <h3>Nhập câu hỏi hàng loạt</h3>
+  <form id="bForm" class="form">
+    <div class="two"><label>Đưa vào bộ câu hỏi<select name="set" class="setSel" required></select></label>
+    <label>Văn bản nguồn (áp cho các dòng không ghi nguồn)<select name="doc" class="docSel"><option value="">— Không chọn —</option></select></label></div>
+    <label>Danh sách câu hỏi – mỗi câu 1 dòng, các cột cách nhau bằng dấu <b>|</b>
+      <textarea name="text" rows="10" placeholder="Chủ đề | Điều/khoản | Câu hỏi | Đáp án ĐÚNG | Sai 1 | Sai 2 | Sai 3&#10;Lương thưởng MS | Điều 3 | Mức lương cố định của MS là bao nhiêu? | 5.500.000 đồng/tháng | 6.500.000 đồng/tháng | 4.000.000 đồng/tháng | 5.000.000 đồng/tháng"></textarea></label>
+    <p class="small muted">Có thể dán trực tiếp từ Excel/Google Sheets (các cột cách nhau bằng Tab cũng được). Cột "Điều/khoản" có thể để trống hoặc ghi nguồn đầy đủ. Đáp án đúng luôn ở cột thứ 4, hệ thống tự xáo trộn khi phát đề.</p>
+    <p class="small" id="bPreview"></p>
+    <div id="bMsg" class="msg" hidden style="white-space:pre-line"></div>
+    <div class="modal-act"><button type="button" class="btn ghost" id="bCancel">Hủy</button><button class="btn primary">Nhập vào ngân hàng</button></div>
+  </form>
+</div></div>
 <div class="modal" id="modal" hidden><div class="modal-box"><h3 id="mTitle"></h3><p id="mText" class="muted"></p><div class="modal-act"><button class="btn ghost" id="mNo">Quay lại</button><button class="btn primary" id="mYes">Đồng ý</button></div></div></div>
 <div class="toast" id="toast" hidden></div>
+<script src="/docs-lib.js"></script>
+<script src="/docs-build.js"></script>
 <script src="/admin.js"></script>
 </body>
 </html>

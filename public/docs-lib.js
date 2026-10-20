@@ -9,11 +9,16 @@
   const tokens = (s) => norm(s).split(' ').filter((w) => w.length > 1 && !STOP.has(w));
 
   function loadIndex() {
-    if (!indexP) indexP = fetch('/docs/index.json').then((r) => r.json());
+    // Văn bản gốc (tĩnh) + văn bản quản trị viên tải lên (/api/docs)
+    if (!indexP) indexP = Promise.all([
+      fetch('/docs/index.json').then((r) => r.json()),
+      fetch('/api/docs').then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    ]).then(([a, b]) => [...a, ...(Array.isArray(b) ? b : [])]);
     return indexP;
   }
   function loadDoc(id) {
-    if (!cache[id]) cache[id] = fetch(`/docs/${id}.json`).then((r) => { if (!r.ok) throw new Error('Không tải được văn bản'); return r.json(); });
+    const url = /^u[a-z0-9]+$/.test(id) ? `/api/docs?id=${encodeURIComponent(id)}` : `/docs/${id}.json`;
+    if (!cache[id]) cache[id] = fetch(url).then((r) => { if (!r.ok) throw new Error('Không tải được văn bản'); return r.json(); });
     return cache[id];
   }
 
@@ -86,7 +91,8 @@
     return `/docs.html?${p}`;
   }
 
-  root.TNGDocs = { loadIndex, loadDoc, parseRef, locate, highlight, markTerms, docUrl, norm, escH };
+  const resetIndex = () => { indexP = null; };
+  root.TNGDocs = { loadIndex, resetIndex, loadDoc, parseRef, locate, highlight, markTerms, docUrl, norm, escH };
   if (typeof module !== 'undefined') module.exports = root.TNGDocs;
 })(typeof window !== 'undefined' ? window : globalThis);
 
