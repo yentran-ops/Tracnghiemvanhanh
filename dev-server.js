@@ -1,12 +1,12 @@
-// Máy chủ chạy thử tại máy (không cần Vercel CLI): npm run dev → http://localhost:3000
-// Không có biến môi trường Redis thì dữ liệu lưu trong bộ nhớ, tắt máy chủ là mất.
+﻿// MĂ¡y chá»§ cháº¡y thá»­ táº¡i mĂ¡y (khĂ´ng cáº§n Vercel CLI): npm run dev â†’ http://localhost:3000
+// KhĂ´ng cĂ³ biáº¿n mĂ´i trÆ°á»ng Redis thĂ¬ dá»¯ liá»‡u lÆ°u trong bá»™ nhá»›, táº¯t mĂ¡y chá»§ lĂ  máº¥t.
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -32,3 +32,4 @@ http.createServer(async (req, res) => {
     console.error(e); res.status(500).end('Error');
   }
 }).listen(process.env.PORT || 3000, () => console.log(`TNG Quiz: http://localhost:${process.env.PORT || 3000}`));
+

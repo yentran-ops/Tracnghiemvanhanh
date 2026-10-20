@@ -1,104 +1,131 @@
-import crypto from 'node:crypto';
-import { QUESTIONS } from '../lib/questions.js';
-import { getBank, loadEdits, saveEdits } from '../lib/bank.js';
-import { getJSON, getJSONMany, setJSON, del, hdel, smembers, hasDb } from '../lib/store.js';
-import { today, clean } from '../lib/util.js';
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtD = (d) => (d ? d.split('-').reverse().join('/') : '');
+  let key = '';
+  try { key = sessionStorage.getItem('tng_admin') || ''; } catch {}
+  let bank = [], users = [];
 
-const BASE_IDS = new Set(QUESTIONS.map((q) => q.id));
-
-function authorized(req) {
-  const pass = process.env.ADMIN_PASSWORD || '';
-  const given = String(req.headers['x-admin-key'] || '');
-  if (!pass || !given) return false;
-  const a = crypto.createHash('sha256').update(pass).digest();
-  const b = crypto.createHash('sha256').update(given).digest();
-  return crypto.timingSafeEqual(a, b);
-}
-
-function validQuestion(b) {
-  const q = { topic: clean(b.topic), ref: clean(b.ref), q: clean(b.q), o: (b.o || []).map(clean) };
-  if (!q.topic || !q.q) return 'Vui lòng nhập chủ đề và nội dung câu hỏi.';
-  if (q.o.length !== 4 || q.o.some((x) => !x)) return 'Cần đủ 4 phương án (1 đúng, 3 sai).';
-  if (new Set(q.o.map((x) => x.toLowerCase())).size !== 4) return 'Các phương án không được trùng nhau.';
-  return q;
-}
-
-export default async function handler(req, res) {
-  if (!process.env.ADMIN_PASSWORD) return res.status(503).json({ error: 'Chưa cấu hình biến môi trường ADMIN_PASSWORD trên Vercel.' });
-  if (!authorized(req)) return res.status(401).json({ error: 'Sai mật khẩu quản trị.' });
-  const action = req.query?.action;
-  const b = req.body || {};
-  try {
-    if (req.method === 'GET' && action === 'bank') {
-      return res.json({ questions: await getBank({ includeDisabled: true }), persistent: hasDb });
-    }
-    if (req.method === 'GET' && action === 'users') {
-      const uks = await smembers('users');
-      const d = today();
-      const users = await getJSONMany(uks.map((k) => `user:${k}`));
-      const sess = await getJSONMany(uks.map((k) => `sess:${d}:${k}`));
-      const fails = await getJSONMany(uks.map((k) => `pinfail:${d}:${k}`));
-      return res.json({
-        users: uks.map((uk, i) => users[i] && ({
-          uk, name: users[i].name, dept: users[i].dept, joinDate: users[i].joinDate || '', createdAt: users[i].createdAt,
-          hasPin: Boolean(users[i].pinHash), today: sess[i] ? (sess[i].result ? 'done' : 'doing') : 'none', fails: fails[i] || 0,
-        })).filter(Boolean).sort((x, y) => x.dept.localeCompare(y.dept) || x.name.localeCompare(y.name)),
-      });
-    }
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-    const e = await loadEdits();
-    switch (action) {
-      case 'saveQuestion': {
-        const q = validQuestion(b);
-        if (typeof q === 'string') return res.status(400).json({ error: q });
-        if (b.id && BASE_IDS.has(b.id)) {
-          e.overrides[b.id] = { ...(e.overrides[b.id] || {}), ...q };
-        } else if (b.id) {
-          const i = e.added.findIndex((x) => x.id === b.id);
-          if (i < 0) return res.status(404).json({ error: 'Không tìm thấy câu hỏi.' });
-          e.added[i] = { ...e.added[i], ...q };
-        } else {
-          e.added.push({ id: 'c' + Date.now().toString(36), ...q, createdAt: Date.now() });
-        }
-        break;
-      }
-      case 'toggleQuestion': {
-        if (BASE_IDS.has(b.id)) e.overrides[b.id] = { ...(e.overrides[b.id] || {}), disabled: Boolean(b.disabled) };
-        else { const x = e.added.find((y) => y.id === b.id); if (!x) return res.status(404).json({ error: 'Không tìm thấy câu hỏi.' }); x.disabled = Boolean(b.disabled); }
-        break;
-      }
-      case 'restoreQuestion': {
-        if (!BASE_IDS.has(b.id)) return res.status(400).json({ error: 'Chỉ khôi phục được câu hỏi gốc.' });
-        delete e.overrides[b.id];
-        break;
-      }
-      case 'deleteQuestion': {
-        if (BASE_IDS.has(b.id)) return res.status(400).json({ error: 'Câu hỏi gốc không xóa được, chỉ có thể tắt.' });
-        e.added = e.added.filter((x) => x.id !== b.id);
-        break;
-      }
-      case 'resetPin': {
-        const u = await getJSON(`user:${b.uk}`);
-        if (!u) return res.status(404).json({ error: 'Không tìm thấy nhân viên.' });
-        u.pinHash = null; u.salt = null;
-        await setJSON(`user:${b.uk}`, u);
-        await del(`pinfail:${today()}:${b.uk}`);
-        return res.json({ ok: true });
-      }
-      case 'allowRetake': {
-        const d = today();
-        await del(`sess:${d}:${b.uk}`);
-        await hdel(`lb:${d}`, b.uk);
-        return res.json({ ok: true });
-      }
-      default:
-        return res.status(400).json({ error: 'Thao tác không hợp lệ.' });
-    }
-    await saveEdits(e);
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Lỗi máy chủ, vui lòng thử lại.' });
+  async function api(action, body) {
+    const r = await fetch(`/api/admin?action=${action}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) logout();
+    if (!r.ok) throw new Error(j.error || 'Lỗi kết nối');
+    return j;
   }
-}
+  function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 2200); }
+  function confirmBox(title, text, onYes, yes = 'Đồng ý') {
+    $('#mTitle').textContent = title; $('#mText').textContent = text; $('#mYes').textContent = yes; $('#modal').hidden = false;
+    $('#mYes').onclick = () => { $('#modal').hidden = true; onYes(); };
+    $('#mNo').onclick = () => ($('#modal').hidden = true);
+  }
+
+  // ---------- Đăng nhập ----------
+  $('#loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    key = e.target.pw.value;
+    try { await loadBank(); try { sessionStorage.setItem('tng_admin', key); } catch {} enter(); }
+    catch (err) { const m = $('#loginMsg'); m.hidden = false; m.textContent = err.message; }
+  });
+  function enter() { $('#loginView').hidden = true; $('#adminNav').hidden = false; tab('questions'); }
+  function logout() { key = ''; try { sessionStorage.removeItem('tng_admin'); } catch {} location.reload(); }
+  $('#logout').onclick = logout;
+  $('#adminNav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) tab(b.dataset.tab); });
+  function tab(t) {
+    document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
+    $('#tab-questions').hidden = t !== 'questions'; $('#tab-users').hidden = t !== 'users';
+    if (t === 'users') loadUsers(); else renderBank();
+  }
+
+  // ---------- Câu hỏi ----------
+  async function loadBank() { const j = await api('bank'); bank = j.questions; if (!j.persistent) toast('⚠ Chưa kết nối Redis – thay đổi sẽ không được lưu lâu dài'); }
+  function renderBank() {
+    const topics = [...new Set(bank.map((q) => q.topic))];
+    const sel = $('#qTopic'), cur = sel.value;
+    sel.innerHTML = '<option value="">Tất cả chủ đề</option>' + topics.map((t) => `<option ${t === cur ? 'selected' : ''}>${esc(t)}</option>`).join('');
+    $('#topicList').innerHTML = topics.map((t) => `<option value="${esc(t)}">`).join('');
+    const on = bank.filter((q) => !q.disabled).length;
+    $('#qSummary').textContent = `${bank.length} câu · ${on} đang dùng · ${bank.length - on} đã tắt · ${bank.filter((q) => q.source === 'custom').length} câu thêm mới`;
+    const s = $('#qSearch').value.trim().toLowerCase(), tp = sel.value, st = $('#qStatus').value;
+    const list = bank.filter((q) =>
+      (!tp || q.topic === tp) &&
+      (!s || (q.q + ' ' + q.ref + ' ' + q.o.join(' ')).toLowerCase().includes(s)) &&
+      (!st || (st === 'on' && !q.disabled) || (st === 'off' && q.disabled) || (st === 'edited' && q.edited) || (st === 'custom' && q.source === 'custom')));
+    $('#qList').innerHTML = list.length ? list.map((q) => `
+      <div class="qi ${q.disabled ? 'off' : ''}">
+        <div>
+          <span class="chip">${esc(q.topic)}</span>${q.source === 'custom' ? '<span class="badge c">Thêm mới</span>' : ''}${q.edited ? '<span class="badge e">Đã sửa</span>' : ''}${q.disabled ? '<span class="badge x">Đã tắt</span>' : ''}
+          <div class="qi-q">${esc(q.q)}</div>
+          <div class="qi-o"><b>✓ ${esc(q.o[0])}</b><br>✗ ${q.o.slice(1).map(esc).join('<br>✗ ')}</div>
+          <div class="ref" style="margin-top:6px">📖 ${esc(q.ref || '—')} · <span class="muted">${q.id}</span></div>
+        </div>
+        <div class="qi-act">
+          <button class="btn ghost" data-a="edit" data-id="${q.id}">Sửa</button>
+          <button class="btn ghost" data-a="toggle" data-id="${q.id}">${q.disabled ? 'Bật lại' : 'Tắt'}</button>
+          ${q.edited ? `<button class="btn ghost" data-a="restore" data-id="${q.id}">Khôi phục gốc</button>` : ''}
+          ${q.source === 'custom' ? `<button class="btn danger" data-a="delete" data-id="${q.id}">Xóa</button>` : ''}
+        </div>
+      </div>`).join('') : '<p class="empty">Không có câu hỏi phù hợp.</p>';
+  }
+  ['#qSearch', '#qTopic', '#qStatus'].forEach((s) => $(s).addEventListener('input', renderBank));
+  $('#qList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const q = bank.find((x) => x.id === b.dataset.id);
+    if (b.dataset.a === 'edit') openForm(q);
+    if (b.dataset.a === 'toggle') act('toggleQuestion', { id: q.id, disabled: !q.disabled }, q.disabled ? 'Đã bật lại câu hỏi' : 'Đã tắt câu hỏi');
+    if (b.dataset.a === 'restore') confirmBox('Khôi phục nội dung gốc?', 'Các chỉnh sửa của câu này sẽ bị bỏ.', () => act('restoreQuestion', { id: q.id }, 'Đã khôi phục'));
+    if (b.dataset.a === 'delete') confirmBox('Xóa câu hỏi?', 'Câu hỏi thêm mới này sẽ bị xóa vĩnh viễn.', () => act('deleteQuestion', { id: q.id }, 'Đã xóa'), 'Xóa');
+  });
+  async function act(action, body, msg) {
+    try { await api(action, body); await loadBank(); renderBank(); toast(msg); } catch (err) { toast(err.message); }
+  }
+  let editing = null;
+  function openForm(q) {
+    editing = q || null;
+    const f = $('#qForm'); f.reset(); $('#qmMsg').hidden = true;
+    $('#qmTitle').textContent = q ? `Sửa câu hỏi ${q.id}` : 'Thêm câu hỏi';
+    if (q) { f.topic.value = q.topic; f.ref.value = q.ref || ''; f.q.value = q.q; q.o.forEach((o, i) => (f['o' + i].value = o)); }
+    $('#qModal').hidden = false;
+  }
+  $('#addQ').onclick = () => openForm(null);
+  $('#qmCancel').onclick = () => ($('#qModal').hidden = true);
+  $('#qForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    try {
+      await api('saveQuestion', { id: editing?.id, topic: f.topic.value, ref: f.ref.value, q: f.q.value, o: [0, 1, 2, 3].map((i) => f['o' + i].value) });
+      $('#qModal').hidden = true; await loadBank(); renderBank(); toast('Đã lưu câu hỏi');
+    } catch (err) { const m = $('#qmMsg'); m.hidden = false; m.textContent = err.message; }
+  });
+
+  // ---------- Nhân viên ----------
+  async function loadUsers() {
+    try { users = (await api('users')).users; renderUsers(); } catch (err) { toast(err.message); }
+  }
+  function renderUsers() {
+    const s = $('#uSearch').value.trim().toLowerCase();
+    const list = users.filter((u) => !s || u.name.toLowerCase().includes(s));
+    $('#uSummary').textContent = `${users.length} nhân viên · hôm nay đã làm: ${users.filter((u) => u.today === 'done').length}`;
+    const stt = { done: ['done', 'Đã làm'], doing: ['doing', 'Đang làm'], none: ['none', 'Chưa làm'] };
+    $('#uRows').innerHTML = list.map((u) => `<tr>
+      <td><b>${esc(u.name)}</b>${!u.hasPin ? '<div class="small" style="color:#b45309">PIN đã đặt lại – chờ đặt mới</div>' : ''}${u.fails ? `<div class="small" style="color:var(--bad)">Sai PIN ${u.fails} lần hôm nay</div>` : ''}</td>
+      <td><span class="tag">${esc(u.dept)}</span></td><td>${fmtD(u.joinDate)}</td>
+      <td><span class="st ${stt[u.today][0]}">${stt[u.today][1]}</span></td>
+      <td class="r"><button class="btn ghost sm" data-u="pin" data-k="${esc(u.uk)}">Đặt lại PIN</button> <button class="btn ghost sm" data-u="retake" data-k="${esc(u.uk)}" ${u.today === 'none' ? 'disabled' : ''}>Cho làm lại hôm nay</button></td>
+    </tr>`).join('');
+    $('#uEmpty').hidden = users.length > 0;
+  }
+  $('#uSearch').addEventListener('input', renderUsers);
+  $('#uRows').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-u]'); if (!b) return;
+    const u = users.find((x) => x.uk === b.dataset.k);
+    if (b.dataset.u === 'pin') confirmBox('Đặt lại PIN?', `${u.name} sẽ tự đặt PIN mới ở lần đăng nhập kế tiếp.`, async () => { try { await api('resetPin', { uk: u.uk }); toast('Đã đặt lại PIN'); loadUsers(); } catch (err) { toast(err.message); } });
+    if (b.dataset.u === 'retake') confirmBox('Cho làm lại hôm nay?', `Kết quả hôm nay của ${u.name} sẽ bị xóa khỏi bảng xếp hạng (dòng đã ghi vào Google Sheets vẫn giữ nguyên).`, async () => { try { await api('allowRetake', { uk: u.uk }); toast('Đã cho phép làm lại'); loadUsers(); } catch (err) { toast(err.message); } });
+  });
+
+  if (key) loadBank().then(enter).catch(() => {});
+})();

@@ -1,4 +1,4 @@
-import { getJSON, setJSON, hset, hgetall } from '../lib/store.js';
+import { getJSON, setJSON, hset, hgetall, sadd } from '../lib/store.js';
 import { appendToSheet } from '../lib/sheet.js';
 import { TIME_LIMIT, clean, userKey, rankRows, publicQuestions } from '../lib/util.js';
 
@@ -38,6 +38,9 @@ export default async function handler(req, res) {
     s.result = result;
     await setJSON(key, s, 60 * 60 * 48);
     await hset(`lb:${date}`, uk, result);
+    // Lưu bài làm để nhân viên xem lại sau (giữ ~13 tháng)
+    await setJSON(`rev:${date}:${uk}`, { result, review }, 60 * 60 * 24 * 400);
+    await sadd(`hist:${uk}`, date);
     await appendToSheet(result, date);
 
     const rows = rankRows(await hgetall(`lb:${date}`));

@@ -1,11 +1,11 @@
-# TNG Quiz – Trắc nghiệm Quy trình & Quy định
+﻿# TNG Quiz – Trắc nghiệm Quy trình & Quy định
 
 Ứng dụng web trắc nghiệm hằng ngày cho nhân sự The New Gym.
 
 - **Đăng nhập:** Họ tên, Phòng ban (Vận hành / Kế toán / Membership / Ban phát triển), Ngày vào làm (không bắt buộc)
 - **Mỗi người 1 lượt/ngày** (theo Họ tên + Phòng ban). Bảng xếp hạng **làm mới lúc 00:00 (giờ Việt Nam)**
 - **Xếp hạng từ cao đến thấp:** số câu đúng, bằng điểm thì ưu tiên thời gian nhanh hơn
-- Mỗi lượt **20 câu ngẫu nhiên** từ ngân hàng **133 câu**, đáp án được xáo trộn. Thời gian **15 phút**, hết giờ tự nộp bài
+- Mỗi lượt **20 câu ngẫu nhiên** từ ngân hàng **165 câu** (gồm 32 câu đối chiếu giữa các văn bản), đáp án được xáo trộn. Thời gian **15 phút**, hết giờ tự nộp bài
 - Đáp án chỉ nằm ở máy chủ và được chấm ở máy chủ, nên không xem trộm được qua trình duyệt
 - Bảng tổng quan gồm: lượt tham gia, điểm TB, top 3, xếp hạng theo phòng ban, tỷ lệ đúng theo chủ đề, xem lại các ngày trước, xuất CSV
 
@@ -15,6 +15,15 @@
   - Câu hỏi: tìm kiếm, lọc theo chủ đề; thêm mới, sửa, tắt/bật, khôi phục nội dung gốc, xóa câu thêm mới
   - Nhân viên: xem ai đã làm hôm nay, **đặt lại PIN**, **cho làm lại hôm nay**
 - **Bảng xếp hạng Ngày / Tuần / Tháng:** tuần tính từ Thứ Hai đến Chủ Nhật. Xếp theo tổng số câu đúng cộng dồn, bằng nhau thì ưu tiên điểm TB cao hơn, rồi đến tổng thời gian ít hơn.
+
+## Bản cập nhật giao diện (logo & tài liệu)
+- Giao diện mới theo màu logo The New Gym: xanh #4A9FDC, xám #545356, cam #E8833A.
+- **Tài liệu** `/docs.html`: toàn bộ 13 văn bản trong thư mục TNG (QĐ 272, QĐ 260–264, 4 chính sách công khai, SOP-CLB-01, mẫu HĐPT, Phụ lục 1). Có tìm kiếm, mục lục và số trang PDF.
+- **Trích dẫn đáp án:** khi xem lại bài, dưới mỗi câu hiện đoạn trích văn bản gốc (tô sáng cụm đáp án, kèm Điều và trang). Bấm vào sẽ mở đúng đoạn đó trong trang Tài liệu.
+- **Bài của tôi:** đăng nhập Họ tên + Phòng ban + PIN để xem lại mọi bài đã làm (lưu khoảng 13 tháng).
+- **Khóa Tài liệu khi đang làm bài:** trang Tài liệu tự khóa trong lúc làm và mở lại ngay sau khi nộp bài hoặc hết giờ.
+- **Nút "Quản trị"** ở góc phải trên. Trang quản trị có hướng dẫn lấy mật khẩu ngay trên màn hình đăng nhập.
+- Dữ liệu văn bản nằm trong `public/docs/*.json`. Khi văn bản gốc thay đổi, cần tạo lại các file này.
 
 ## Cấu trúc
 ```
@@ -66,3 +75,4 @@ Mở `lib/questions.js`, thêm dòng theo mẫu:
 ['Chủ đề', 'Nguồn văn bản · Điều', 'Câu hỏi?', ['ĐÁP ÁN ĐÚNG (luôn đặt đầu tiên)', 'Sai 1', 'Sai 2', 'Sai 3']],
 ```
 Commit lên GitHub thì Vercel sẽ tự triển khai lại.
+

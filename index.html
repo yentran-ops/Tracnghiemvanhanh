@@ -3,137 +3,199 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TNG Quiz – Quy trình & Quy định</title>
+<title>The New Gym – Quiz Quy trình</title>
 <meta name="description" content="Trắc nghiệm hằng ngày về quy trình, quy định khối Club – The New Gym">
+<meta name="theme-color" content="#4a9fdc">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23111827'/><text x='16' y='22' font-size='14' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23c6f135'>TNG</text></svg>">
+<link rel="icon" href="/logo.png">
 </head>
 <body>
 <header class="topbar">
   <div class="wrap topbar-in">
-    <a class="brand" href="#" data-nav="login"><span class="logo">TNG</span><span class="brand-t"><b>Quiz Quy trình</b><small>The New Gym · Khối Club</small></span></a>
+    <a class="brand" href="#" data-nav="home"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quiz Quy trình</b><small>Khối Club</small></span></a>
     <nav class="nav">
-      <button data-nav="login" class="active">Làm bài</button>
-      <button data-nav="board">Bảng xếp hạng</button>
+      <button data-nav="home" class="active"><svg class="i"><use href="/icons.svg#play"/></svg>Làm bài</button>
+      <button data-nav="board"><svg class="i"><use href="/icons.svg#trophy"/></svg>Xếp hạng</button>
+      <button data-nav="mine"><svg class="i"><use href="/icons.svg#history"/></svg>Bài của tôi</button>
+      <a href="/docs.html"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</a>
     </nav>
+    <a class="admin-btn" href="/admin.html" title="Trang quản trị"><svg class="i sm"><use href="/icons.svg#shield"/></svg>Quản trị</a>
   </div>
 </header>
 
 <main class="wrap">
-  <!-- ĐĂNG NHẬP -->
-  <section id="view-login" class="view">
-    <div class="grid-2">
-      <div class="card hero">
-        <span class="pill">Mỗi ngày 1 lượt · Làm mới lúc 00:00</span>
-        <h1>Kiểm tra kiến thức<br><span class="hl">Quy trình – Quy định</span></h1>
-        <p class="muted" id="intro">Mỗi lượt gồm 20 câu ngẫu nhiên trích nguyên văn từ bộ quy định khối Club và các quy chế sản phẩm. Thời gian 15 phút.</p>
+  <!-- ============ TRANG CHỦ / ĐĂNG NHẬP ============ -->
+  <section id="view-home" class="view fade">
+    <div class="hero">
+      <div>
+        <span class="pill"><svg class="i sm"><use href="/icons.svg#calendar"/></svg>Mỗi ngày 1 lượt · Làm mới lúc 00:00</span>
+        <h1>Kiểm tra kiến thức<br><span>Quy trình – Quy định</span></h1>
+        <p class="hero-p" id="intro">Câu hỏi trích nguyên văn từ bộ quy định khối Club và các quy chế sản phẩm. Sau khi nộp bài, mỗi đáp án đều kèm đoạn trích văn bản gốc để bạn đối chiếu.</p>
+        <div class="feats">
+          <div class="feat"><svg class="i"><use href="/icons.svg#list"/></svg><b id="fQ">20 câu</b><small>ngẫu nhiên mỗi lượt</small></div>
+          <div class="feat"><svg class="i"><use href="/icons.svg#clock"/></svg><b id="fT">15 phút</b><small>tự nộp khi hết giờ</small></div>
+          <div class="feat"><svg class="i"><use href="/icons.svg#quote"/></svg><b>Trích dẫn</b><small>đúng đoạn văn bản</small></div>
+        </div>
+      </div>
+      <div class="login-card">
+        <h2>Bắt đầu làm bài</h2>
+        <p class="muted small" style="margin-bottom:16px">Điền thông tin để vào lượt hôm nay</p>
         <form id="loginForm" class="form" autocomplete="on">
           <label>Họ và tên <span class="req">*</span>
             <input name="name" required minlength="2" maxlength="60" placeholder="VD: Nguyễn Văn An" autocomplete="name">
           </label>
           <label>Phòng ban <span class="req">*</span></label>
           <div class="seg" id="deptSeg"></div>
-          <label>Mã PIN 4 số <span class="req">*</span>
-            <input name="pin" type="password" inputmode="numeric" pattern="\d{4}" maxlength="4" required placeholder="••••" autocomplete="off">
-            <span class="opt small">Lần đầu đăng nhập: tự đặt mã PIN và ghi nhớ để dùng cho các lần sau. Quên PIN, liên hệ quản trị viên.</span>
-          </label>
-          <label>Ngày vào làm <span class="opt">(không bắt buộc)</span>
-            <input name="joinDate" type="date">
-          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <label>Mã PIN <span class="req">*</span>
+              <input name="pin" class="pin-input" type="password" inputmode="numeric" pattern="\d{4}" maxlength="4" required placeholder="••••" autocomplete="off">
+            </label>
+            <label>Ngày vào làm <span class="opt">(tuỳ chọn)</span>
+              <input name="joinDate" type="date">
+            </label>
+          </div>
+          <span class="hint"><svg class="i sm"><use href="/icons.svg#info"/></svg> Lần đầu: tự đặt PIN 4 số và ghi nhớ để dùng cho các lần sau. Quên PIN, liên hệ quản trị viên.</span>
           <div id="loginMsg" class="msg" hidden></div>
-          <button class="btn primary big" type="submit" id="startBtn">Bắt đầu làm bài →</button>
+          <button class="btn orange big block" type="submit" id="startBtn">Bắt đầu làm bài<svg class="i"><use href="/icons.svg#right"/></svg></button>
         </form>
-        <ul class="rules">
-          <li>Xếp hạng theo <b>số câu đúng</b>, bằng điểm thì ưu tiên <b>thời gian làm nhanh hơn</b>.</li>
-          <li>Hết giờ hệ thống tự nộp bài. Không tải lại trang để làm lại được.</li>
-        </ul>
+      </div>
+    </div>
+
+    <div class="home-grid">
+      <div class="card">
+        <div class="card-h"><h2><span class="ico o"><svg class="i"><use href="/icons.svg#trophy"/></svg></span>Top hôm nay</h2><button class="link" data-nav="board">Xem bảng xếp hạng<svg class="i sm"><use href="/icons.svg#right"/></svg></button></div>
+        <div id="miniStats" class="mini-stats"></div>
+        <ol id="miniBoard" class="lb-list"></ol>
       </div>
       <div class="card">
-        <div class="card-h"><h2>Top hôm nay</h2><button class="link" data-nav="board">Xem tất cả →</button></div>
-        <div id="miniStats" class="mini-stats"></div>
-        <ol id="miniBoard" class="mini-board"></ol>
+        <div class="card-h"><h2><span class="ico"><svg class="i"><use href="/icons.svg#target"/></svg></span>Cách tính điểm</h2></div>
+        <ol class="steps">
+          <li><span class="n">1</span><div><b>Mỗi ngày 1 lượt</b><span>Đăng nhập bằng Họ tên + Phòng ban + PIN. Bảng xếp hạng làm mới lúc 00:00.</span></div></li>
+          <li><span class="n">2</span><div><b>Xếp hạng</b><span>Theo số câu đúng; bằng điểm thì ai làm nhanh hơn đứng trên. Có bảng Tuần và Tháng.</span></div></li>
+          <li><span class="n">3</span><div><b>Học từ đáp án</b><span>Xem lại bài trong "Bài của tôi". Mỗi đáp án dẫn tới đúng đoạn trích trong văn bản gốc.</span></div></li>
+        </ol>
+        <a class="btn soft block" href="/docs.html" style="margin-top:18px"><svg class="i"><use href="/icons.svg#book"/></svg>Tra cứu toàn bộ văn bản</a>
       </div>
     </div>
   </section>
 
-  <!-- LÀM BÀI -->
+  <!-- ============ LÀM BÀI ============ -->
   <section id="view-quiz" class="view" hidden>
-    <div class="quiz-head card">
-      <div><div class="muted small" id="qWho"></div><div class="qcount"><b id="qIdx">1</b>/<span id="qTotal">20</span></div></div>
-      <div class="progress"><div id="qBar"></div></div>
-      <div class="timer" id="timer">15:00</div>
-    </div>
-    <div class="card qcard">
-      <span class="chip" id="qTopic"></span>
-      <h2 id="qText" class="qtext"></h2>
-      <div id="qOpts" class="opts"></div>
-      <div class="qnav">
-        <button class="btn ghost" id="prevBtn">← Câu trước</button>
-        <button class="btn primary" id="nextBtn">Câu tiếp →</button>
+    <div class="mobile-bar"><div class="small"><b id="mbIdx">1/20</b> · <span id="mbDone">0</span> đã trả lời</div><div class="t" id="mbTimer"><svg class="i"><use href="/icons.svg#clock"/></svg><span>15:00</span></div></div>
+    <div class="quiz-layout">
+      <div class="card qcard fade" id="qcard">
+        <div class="q-meta"><span class="q-no">Câu <b id="qIdx">1</b> / <span id="qTotal">20</span></span><span class="chip" id="qTopic"></span></div>
+        <h2 id="qText" class="qtext"></h2>
+        <div id="qOpts" class="opts"></div>
+        <div class="qnav">
+          <button class="btn ghost" id="prevBtn"><svg class="i"><use href="/icons.svg#left"/></svg>Câu trước</button>
+          <button class="btn primary" id="nextBtn">Câu tiếp<svg class="i"><use href="/icons.svg#right"/></svg></button>
+        </div>
+        <p class="small muted" style="margin-top:16px;text-align:center">Mẹo: nhấn phím A, B, C, D để chọn nhanh · ← → để chuyển câu</p>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-h"><h3>Bảng câu hỏi</h3><span class="muted small" id="answered"></span></div>
-      <div id="dots" class="dots"></div>
-      <button class="btn submit big" id="submitBtn">Nộp bài</button>
+      <aside class="side">
+        <div class="card timer-card">
+          <div class="tring" id="tring"><div><b id="timer">15:00</b><small>thời gian còn lại</small></div></div>
+          <div class="who-line" id="qWho"></div>
+        </div>
+        <div class="card">
+          <div class="card-h" style="margin-bottom:6px"><h3>Bảng câu hỏi</h3><span class="small muted" id="answered"></span></div>
+          <div class="progress"><div id="qBar"></div></div>
+          <div id="dots" class="dots" style="margin-top:14px"></div>
+          <div class="legend"><span><i class="d"></i>Đã trả lời</span><span><i class="c"></i>Đang xem</span><span><i></i>Chưa làm</span></div>
+          <button class="btn orange big block" id="submitBtn" style="margin-top:16px"><svg class="i"><use href="/icons.svg#flag"/></svg>Nộp bài</button>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <!-- KẾT QUẢ -->
+  <!-- ============ KẾT QUẢ ============ -->
   <section id="view-result" class="view" hidden>
-    <div class="card result">
-      <div class="ring" id="ring"><div><b id="rScore">0</b><small>điểm</small></div></div>
-      <div class="result-info">
-        <h1 id="rTitle">Hoàn thành!</h1>
+    <div class="card result fade">
+      <div class="ring" id="ring"><div><b id="rScore">0</b><small>điểm / 100</small></div></div>
+      <div>
+        <span class="chip o" id="rDate"></span>
+        <h1 id="rTitle" style="margin-top:10px">Hoàn thành!</h1>
         <p class="muted" id="rWho"></p>
         <div class="kpis">
-          <div><small>Câu đúng</small><b id="rCorrect">–</b></div>
-          <div><small>Thời gian</small><b id="rTime">–</b></div>
-          <div><small>Hạng hôm nay</small><b id="rRank">–</b></div>
+          <div class="kpi"><span class="ico g"><svg class="i"><use href="/icons.svg#check"/></svg></span><div><small>Câu đúng</small><b id="rCorrect">–</b></div></div>
+          <div class="kpi"><span class="ico"><svg class="i"><use href="/icons.svg#clock"/></svg></span><div><small>Thời gian</small><b id="rTime">–</b></div></div>
+          <div class="kpi"><span class="ico o"><svg class="i"><use href="/icons.svg#award"/></svg></span><div><small>Hạng trong ngày</small><b id="rRank">–</b></div></div>
         </div>
-        <button class="btn primary" data-nav="board">Xem bảng xếp hạng →</button>
+        <div class="actions">
+          <button class="btn primary" data-nav="board"><svg class="i"><use href="/icons.svg#trophy"/></svg>Bảng xếp hạng</button>
+          <button class="btn ghost" id="rBack" hidden><svg class="i"><use href="/icons.svg#left"/></svg>Về danh sách bài làm</button>
+        </div>
       </div>
     </div>
     <div class="card" id="reviewCard">
-      <div class="card-h"><h2>Xem lại đáp án</h2>
-        <div class="tabs" id="reviewTabs"><button data-f="all" class="active">Tất cả</button><button data-f="wrong">Câu sai</button></div>
+      <div class="card-h"><h2><span class="ico"><svg class="i"><use href="/icons.svg#list"/></svg></span>Xem lại đáp án</h2>
+        <div class="tabs" id="reviewTabs"><button data-f="all" class="active">Tất cả</button><button data-f="wrong">Câu sai</button><button data-f="right">Câu đúng</button></div>
       </div>
       <div id="review"></div>
     </div>
   </section>
 
-  <!-- BẢNG XẾP HẠNG -->
+  <!-- ============ BẢNG XẾP HẠNG ============ -->
   <section id="view-board" class="view" hidden>
-    <div class="board-head">
-      <div><h1>Bảng xếp hạng</h1><p class="muted" id="bDateLabel"></p></div>
+    <div class="page-head">
+      <div><h1><span class="ico o"><svg class="i lg"><use href="/icons.svg#trophy"/></svg></span>Bảng xếp hạng</h1><p class="muted" id="bDateLabel" style="margin-top:6px"></p></div>
       <div class="board-ctl">
         <div class="tabs" id="periodTabs"><button data-p="day" class="active">Ngày</button><button data-p="week">Tuần</button><button data-p="month">Tháng</button></div>
-        <input type="date" id="bDate">
-        <button class="btn ghost" id="bToday">Hôm nay</button>
-        <button class="btn ghost" id="bCsv" title="Tải file CSV">⬇ CSV</button>
+        <input type="date" id="bDate" aria-label="Chọn ngày">
+        <button class="btn ghost sm" id="bToday">Hôm nay</button>
+        <button class="btn ghost sm" id="bCsv"><svg class="i sm"><use href="/icons.svg#download"/></svg>CSV</button>
       </div>
     </div>
     <div class="stats" id="bStats"></div>
     <div id="podium" class="podium"></div>
-    <div class="grid-2 board-grid">
+    <div class="board-grid">
       <div class="card">
         <div class="card-h"><h2>Xếp hạng cá nhân</h2><div class="tabs" id="deptTabs"></div></div>
-        <div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Họ tên</th><th>Phòng ban</th><th class="r col-days">Số ngày</th><th class="r">Đúng</th><th class="r" id="thScore">Điểm</th><th class="r">Thời gian</th></tr></thead><tbody id="bRows"></tbody></table></div>
-        <p class="empty" id="bEmpty" hidden>Chưa có ai làm bài trong ngày này.</p>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Nhân viên</th><th>Phòng ban</th><th class="r col-days">Số ngày</th><th class="r">Đúng</th><th class="r" id="thScore">Điểm</th><th class="r">Thời gian</th></tr></thead><tbody id="bRows"></tbody></table></div>
+        <p class="empty" id="bEmpty" hidden>Chưa có ai làm bài trong khoảng thời gian này.</p>
       </div>
-      <div class="side">
-        <div class="card"><div class="card-h"><h2>Theo phòng ban</h2><span class="muted small">Điểm trung bình</span></div><div id="deptBars" class="bars"></div></div>
-        <div class="card"><div class="card-h"><h2>Theo chủ đề</h2><span class="muted small">Tỷ lệ trả lời đúng</span></div><div id="topicBars" class="bars"></div></div>
+      <div class="side-col">
+        <div class="card"><div class="card-h"><h2><span class="ico"><svg class="i"><use href="/icons.svg#users"/></svg></span>Theo phòng ban</h2><span class="muted small">Điểm trung bình</span></div><div id="deptBars" class="bars"></div></div>
+        <div class="card"><div class="card-h"><h2><span class="ico y"><svg class="i"><use href="/icons.svg#target"/></svg></span>Theo chủ đề</h2><span class="muted small">Tỷ lệ đúng · yếu nhất trước</span></div><div id="topicBars" class="bars"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BÀI CỦA TÔI ============ -->
+  <section id="view-mine" class="view" hidden>
+    <div id="mineLogin" class="card narrow fade">
+      <div class="card-h"><h2><span class="ico"><svg class="i"><use href="/icons.svg#history"/></svg></span>Bài làm của tôi</h2></div>
+      <p class="muted small" style="margin-bottom:16px">Nhập thông tin đăng nhập để xem lại các bài đã làm và đáp án kèm trích dẫn.</p>
+      <form id="mineForm" class="form">
+        <label>Họ và tên<input name="name" required></label>
+        <label>Phòng ban</label><div class="seg" id="mineDept"></div>
+        <label>Mã PIN<input name="pin" class="pin-input" type="password" inputmode="numeric" maxlength="4" required placeholder="••••" autocomplete="off"></label>
+        <div id="mineMsg" class="msg" hidden></div>
+        <button class="btn primary big block">Xem bài làm<svg class="i"><use href="/icons.svg#right"/></svg></button>
+      </form>
+    </div>
+    <div id="mineList" hidden class="fade">
+      <div class="card">
+        <div class="profile"><span class="avatar" id="meAvatar"></span><div style="flex:1"><h2 id="meName"></h2><span class="muted small" id="meDept"></span></div><button class="btn ghost sm" id="meLogout"><svg class="i sm"><use href="/icons.svg#logout"/></svg>Thoát</button></div>
+        <div class="stats" id="meStats" style="margin:20px 0 0"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Lịch sử làm bài</h2><span class="muted small">Bấm vào một ngày để xem lại đáp án</span></div>
+        <div class="hist" id="meHist"></div>
+        <p class="empty" id="meEmpty" hidden>Bạn chưa có bài làm nào.</p>
       </div>
     </div>
   </section>
 </main>
-<footer class="wrap foot muted small">Nội dung câu hỏi trích từ QĐ 272/2026/QĐ-TND, SOP-CLB-01 và các QĐ 260–264/2026/QĐ-TND · Công ty Cổ phần The New District</footer>
+
+<footer class="foot"><div class="wrap foot-in"><img src="/logo.png" alt="The New Gym"><span>Nội dung trích từ QĐ 272/2026/QĐ-TND, SOP-CLB-01 và các QĐ 260–264/2026/QĐ-TND · Công ty Cổ phần The New District</span></div></footer>
 
 <div class="modal" id="modal" hidden><div class="modal-box"><h3 id="mTitle"></h3><p id="mText" class="muted"></p><div class="modal-act"><button class="btn ghost" id="mNo">Quay lại</button><button class="btn primary" id="mYes">Đồng ý</button></div></div></div>
+<script src="/docs-lib.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

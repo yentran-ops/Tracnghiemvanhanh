@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tài liệu – The New Gym Quiz</title>
+<meta name="theme-color" content="#4a9fdc">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/docs.css">
+<link rel="icon" href="/logo.png">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quiz Quy trình</b><small>Khối Club</small></span></a>
+    <nav class="nav">
+      <a href="/"><svg class="i"><use href="/icons.svg#play"/></svg>Làm bài</a>
+      <a href="/#board" data-go="board"><svg class="i"><use href="/icons.svg#trophy"/></svg>Xếp hạng</a>
+      <a href="/#mine" data-go="mine"><svg class="i"><use href="/icons.svg#history"/></svg>Bài của tôi</a>
+      <a href="/docs.html" class="active"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</a>
+    </nav>
+    <a class="admin-btn" href="/admin.html"><svg class="i sm"><use href="/icons.svg#shield"/></svg>Quản trị</a>
+  </div>
+</header>
+
+<main class="wrap docs-layout">
+  <aside class="doc-side">
+    <div class="card">
+      <div class="search-box"><svg class="i"><use href="/icons.svg#search"/></svg><input id="docFilter" placeholder="Lọc văn bản…"></div>
+      <div id="docList"></div>
+    </div>
+  </aside>
+
+  <section class="doc-main">
+    <div id="focusBanner" class="focus-banner" hidden></div>
+    <div class="card doc-head">
+      <div class="doc-head-top">
+        <span class="ico"><svg class="i lg"><use href="/icons.svg#file"/></svg></span>
+        <div style="flex:1;min-width:0">
+          <span class="chip" id="docGroup"></span>
+          <h1 id="docTitle">Đang tải…</h1>
+          <p class="muted small" id="docSrc"></p>
+        </div>
+      </div>
+      <div class="doc-tools">
+        <div class="search-box"><svg class="i"><use href="/icons.svg#search"/></svg><input id="docSearch" placeholder="Tìm trong văn bản này (VD: 72 giờ, hoàn phí…)"></div>
+        <span class="small muted" id="hitCount"></span>
+        <button class="btn ghost sm" id="hitPrev" title="Kết quả trước"><svg class="i sm"><use href="/icons.svg#up"/></svg></button>
+        <button class="btn ghost sm" id="hitNext" title="Kết quả sau" style="transform:rotate(180deg)"><svg class="i sm"><use href="/icons.svg#up"/></svg></button>
+        <button class="btn soft sm" id="tocBtn"><svg class="i sm"><use href="/icons.svg#list"/></svg>Mục lục</button>
+      </div>
+      <div id="toc" class="toc" hidden></div>
+    </div>
+    <article class="card doc-body" id="docBody"></article>
+  </section>
+</main>
+<button class="to-top btn primary" id="toTop" hidden title="Lên đầu trang"><svg class="i"><use href="/icons.svg#up"/></svg></button>
+<script src="/docs-lib.js"></script>
+<script src="/docs.js"></script>
+</body>
+</html>
