@@ -18,7 +18,7 @@ function authorized(req) {
 }
 
 function validQuestion(b) {
-  const q = { topic: clean(b.topic), ref: clean(b.ref), q: clean(b.q), o: (b.o || []).map(clean) };
+  const q = { topic: clean(b.topic), ref: clean(b.ref), q: clean(b.q), o: (b.o || []).map(clean), lv: b.lv === 'kho' ? 'kho' : 'de' };
   if (!q.topic || !q.q) return 'Vui lòng nhập chủ đề và nội dung câu hỏi.';
   if (q.o.length !== 4 || q.o.some((x) => !x)) return 'Cần đủ 4 phương án (1 đúng, 3 sai).';
   if (new Set(q.o.map((x) => x.toLowerCase())).size !== 4) return 'Các phương án không được trùng nhau.';
@@ -49,9 +49,9 @@ export default async function handler(req, res) {
     }
     if (req.method === 'GET' && action === 'settings') {
       const [s, bank] = await Promise.all([getSettings(), getBank()]);
-      const setCounts = {};
-      bank.forEach((q) => { const k = q.set || 'quytrinh'; setCounts[k] = (setCounts[k] || 0) + 1; });
-      return res.json({ ...s, limits: LIMITS, bankSize: bank.length, setCounts });
+      const setCounts = {}, hardCounts = {};
+      bank.forEach((q) => { const k = q.set || 'quytrinh'; setCounts[k] = (setCounts[k] || 0) + 1; if (q.lv === 'kho') hardCounts[k] = (hardCounts[k] || 0) + 1; });
+      return res.json({ ...s, limits: LIMITS, bankSize: bank.length, setCounts, hardCounts });
     }
     if (req.method === 'GET' && action === 'docs') {
       return res.json({ docs: await listCustomDocs() });

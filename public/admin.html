@@ -70,7 +70,7 @@
         <input id="qSearch" placeholder="Tìm theo nội dung, nguồn…">
         <select id="qSet"><option value="">Tất cả bộ câu hỏi</option></select>
         <select id="qTopic"><option value="">Tất cả chủ đề</option></select>
-        <select id="qStatus"><option value="">Tất cả trạng thái</option><option value="on">Đang dùng</option><option value="off">Đã tắt</option><option value="edited">Đã chỉnh sửa</option><option value="custom">Câu thêm mới</option></select>
+        <select id="qStatus"><option value="">Tất cả trạng thái</option><option value="on">Đang dùng</option><option value="off">Đã tắt</option><option value="edited">Đã chỉnh sửa</option><option value="custom">Câu thêm mới</option><option value="easy">Câu dễ</option><option value="hard">Câu khó</option></select>
       </div>
       <div id="qList"></div>
     </div>
@@ -144,6 +144,8 @@
         <label>Số câu mỗi đề<input type="number" name="quizSize" min="5" max="100" required></label>
         <p class="muted small" id="sQHint"></p>
         <label style="margin-top:12px">Thời gian làm bài (phút)<input type="number" name="minutes" min="5" max="180" required></label>
+        <label style="margin-top:12px">Tỷ lệ câu khó trong mỗi đề (%)<input type="number" name="hardPct" min="0" max="100" required></label>
+        <p class="muted small" id="sHardHint"></p>
         <p class="muted small">Hết giờ hệ thống tự nộp bài. Thay đổi áp dụng cho <b>lượt làm bài bắt đầu sau khi lưu</b>; người đang làm dở giữ nguyên đề và thời gian cũ.</p>
       </div>
       <div class="card">
@@ -155,7 +157,7 @@
       <div class="card" style="grid-column:1/-1">
         <h3>Bộ câu hỏi dùng khi phát đề</h3>
         <p class="muted small" style="margin:-6px 0 12px">Bật bộ nào thì đề lấy câu từ bộ đó. Ô <b>Số câu cố định</b>: để 0 thì câu được trộn ngẫu nhiên giữa các bộ đang bật; ghi số (VD: 5) thì mỗi đề luôn có đúng số câu đó từ bộ này.</p>
-        <div class="table-wrap"><table class="tbl"><thead><tr><th>Bật</th><th>Tên bộ câu hỏi</th><th class="r">Số câu hiện có</th><th class="r">Số câu cố định</th><th></th></tr></thead><tbody id="sSets"></tbody></table></div>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Bật</th><th>Tên bộ câu hỏi</th><th class="r">Số câu hiện có</th><th class="r">Trong đó câu khó</th><th class="r">Số câu cố định</th><th></th></tr></thead><tbody id="sSets"></tbody></table></div>
         <div style="display:flex;gap:8px;margin-top:10px"><input id="sNewSet" placeholder="Tên bộ câu hỏi mới (VD: Quy trình bán hàng)" maxlength="60"><button type="button" class="btn ghost" id="sAddSet">+ Tạo bộ</button></div>
       </div>
       <div class="set-actions"><div id="sMsg" class="msg" hidden></div><button class="btn primary big">Lưu cài đặt</button></div>
@@ -168,6 +170,7 @@
   <form id="qForm" class="form">
     <div class="two"><label>Bộ câu hỏi<select name="set" class="setSel" required></select></label>
     <label>Chủ đề<input name="topic" list="topicList" required></label></div><datalist id="topicList"></datalist>
+    <label>Độ khó<select name="lv"><option value="de">Dễ – hỏi trực tiếp, phương án sai khác biệt rõ</option><option value="kho">Khó – đánh đố, các phương án gần giống nhau</option></select></label>
     <div class="two"><label>Văn bản nguồn<select name="doc" class="docSel"><option value="">— Chọn văn bản —</option></select></label>
     <label>Điều / khoản<input name="art" placeholder="VD: Chương 4, Điều 10 hoặc Điều 5"></label></div>
     <label>Nguồn hiển thị (tự điền từ 2 ô trên, có thể sửa)<input name="ref" placeholder="VD: QĐ 272/2026/QĐ-TND – Bộ quy định khối Club · Chương 4, Điều 10"></label>
@@ -188,8 +191,8 @@
     <label>Văn bản nguồn (áp cho các dòng không ghi nguồn)<select name="doc" class="docSel"><option value="">— Không chọn —</option></select></label></div>
     <div class="tpl-bar"><label class="btn ghost sm" style="margin:0">📂 Chọn file Excel / CSV đã soạn<input type="file" id="bFile" accept=".xlsx,.xls,.csv" hidden></label><button type="button" class="btn ghost sm" id="bTpl">⬇ Tải form mẫu</button><span class="muted small" id="bFileName"></span></div>
     <label>Danh sách câu hỏi – mỗi câu 1 dòng, các cột cách nhau bằng dấu <b>|</b>
-      <textarea name="text" rows="10" placeholder="Chủ đề | Điều/khoản | Câu hỏi | Đáp án ĐÚNG | Sai 1 | Sai 2 | Sai 3&#10;Lương thưởng MS | Điều 3 | Mức lương cố định của MS là bao nhiêu? | 5.500.000 đồng/tháng | 6.500.000 đồng/tháng | 4.000.000 đồng/tháng | 5.000.000 đồng/tháng"></textarea></label>
-    <p class="small muted">Có thể dán trực tiếp từ Excel/Google Sheets (các cột cách nhau bằng Tab cũng được). Cột "Điều/khoản" có thể để trống hoặc ghi nguồn đầy đủ. Đáp án đúng luôn ở cột thứ 4, hệ thống tự xáo trộn khi phát đề.</p>
+      <textarea name="text" rows="10" placeholder="Chủ đề | Điều/khoản | Câu hỏi | Đáp án ĐÚNG | Sai 1 | Sai 2 | Sai 3 | Độ khó&#10;Lương thưởng MS | Điều 3 | Mức lương cố định của MS là bao nhiêu? | 5.500.000 đồng/tháng | 6.500.000 đồng/tháng | 4.000.000 đồng/tháng | 5.000.000 đồng/tháng | Dễ"></textarea></label>
+    <p class="small muted">Có thể dán trực tiếp từ Excel/Google Sheets (các cột cách nhau bằng Tab cũng được). Cột "Điều/khoản" có thể để trống hoặc ghi nguồn đầy đủ. Cột 8 "Độ khó" ghi <b>Dễ</b> hoặc <b>Khó</b> (để trống = Dễ). Đáp án đúng luôn ở cột thứ 4, hệ thống tự xáo trộn khi phát đề.</p>
     <p class="small" id="bPreview"></p>
     <div id="bMsg" class="msg" hidden style="white-space:pre-line"></div>
     <div class="modal-act"><button type="button" class="btn ghost" id="bCancel">Hủy</button><button class="btn primary">Nhập vào ngân hàng</button></div>

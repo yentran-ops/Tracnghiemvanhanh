@@ -56,3 +56,4 @@ textarea,select{border:1px solid var(--line);background:var(--bg);border-radius:
 #sSets input:not([type=checkbox]){padding:8px 10px}
 
 .tpl-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.badge.h{background:#fde8e8;color:#b91c1c;font-weight:700}

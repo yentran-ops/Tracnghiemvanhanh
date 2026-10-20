@@ -89,11 +89,13 @@
   $('#abDate').addEventListener('change', loadBoard);
 
   // ---------- Cài đặt ----------
-  let sDepts = [], sSets = [], setCounts = {};
+  let sDepts = [], sSets = [], setCounts = {}, hardCounts = {};
   async function loadSettings() {
     try {
       const j = await api('settings'); const f = $('#sForm');
-      f.quizSize.value = j.quizSize; f.minutes.value = Math.round(j.timeLimit / 60); sDepts = [...j.depts]; sSets = j.sets.map((x) => ({ ...x })); setCounts = j.setCounts || {}; META.sets = j.sets;
+      f.quizSize.value = j.quizSize; f.minutes.value = Math.round(j.timeLimit / 60); f.hardPct.value = j.hardPct; sDepts = [...j.depts]; sSets = j.sets.map((x) => ({ ...x })); setCounts = j.setCounts || {}; hardCounts = j.hardCounts || {}; META.sets = j.sets;
+      const hint = () => { const n = Number(f.quizSize.value) || 0, h = Math.round(n * (Number(f.hardPct.value) || 0) / 100); $('#sHardHint').textContent = `Mỗi đề ${n} câu ≈ ${n - h} câu dễ + ${h} câu khó. Nếu không đủ câu khó, hệ thống tự bù bằng câu dễ.`; };
+      f.quizSize.oninput = hint; f.hardPct.oninput = hint; hint();
       f.quizSize.max = Math.min(j.limits.quizMax, j.bankSize);
       $('#sQHint').textContent = `Ngân hàng hiện có ${j.bankSize} câu đang dùng (tối đa ${Math.min(j.limits.quizMax, j.bankSize)} câu/đề).`;
       $('#sSummary').textContent = `Hiện tại: ${j.quizSize} câu · ${Math.round(j.timeLimit / 60)} phút · ${j.depts.length} phòng ban`;
@@ -119,7 +121,7 @@
     $('#sSets').innerHTML = sSets.map((x, i) => `<tr>
       <td><input type="checkbox" data-s="active" data-i="${i}" ${x.active ? 'checked' : ''}></td>
       <td><input data-s="name" data-i="${i}" value="${esc(x.name)}" maxlength="60" style="min-width:180px"></td>
-      <td class="r">${setCounts[x.id] || 0}</td>
+      <td class="r">${setCounts[x.id] || 0}</td><td class="r">${hardCounts[x.id] || 0}</td>
       <td class="r"><input type="number" min="0" max="100" data-s="count" data-i="${i}" value="${x.count || 0}" style="width:80px"></td>
       <td class="r">${x.builtin ? '<span class="muted small">Có sẵn</span>' : `<button type="button" class="btn ghost sm" data-del="${i}">Gỡ</button>`}</td></tr>`).join('');
   }
@@ -144,7 +146,7 @@
   $('#sForm').addEventListener('submit', async (e) => {
     e.preventDefault(); const f = e.target;
     try {
-      await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, depts: sDepts, sets: sSets });
+      await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, hardPct: f.hardPct.value, depts: sDepts, sets: sSets });
       toast('Đã lưu cài đặt'); loadSettings();
     } catch (err) { const m = $('#sMsg'); m.hidden = false; m.textContent = err.message; }
   });
@@ -157,17 +159,17 @@
     sel.innerHTML = '<option value="">Tất cả chủ đề</option>' + topics.map((t) => `<option ${t === cur ? 'selected' : ''}>${esc(t)}</option>`).join('');
     $('#topicList').innerHTML = topics.map((t) => `<option value="${esc(t)}">`).join('');
     const on = bank.filter((q) => !q.disabled).length;
-    $('#qSummary').textContent = `${bank.length} câu · ${on} đang dùng · ${bank.length - on} đã tắt · ${bank.filter((q) => q.source === 'custom').length} câu thêm mới`;
+    $('#qSummary').textContent = `${bank.length} câu (${bank.filter((q) => q.lv === 'kho').length} khó) · ${on} đang dùng · ${bank.length - on} đã tắt · ${bank.filter((q) => q.source === 'custom').length} câu thêm mới`;
     const s = $('#qSearch').value.trim().toLowerCase(), tp = sel.value, st = $('#qStatus').value, qs = $('#qSet').value;
     const list = bank.filter((q) =>
       (!qs || (q.set || 'quytrinh') === qs) &&
       (!tp || q.topic === tp) &&
       (!s || (q.q + ' ' + q.ref + ' ' + q.o.join(' ')).toLowerCase().includes(s)) &&
-      (!st || (st === 'on' && !q.disabled) || (st === 'off' && q.disabled) || (st === 'edited' && q.edited) || (st === 'custom' && q.source === 'custom')));
+      (!st || (st === 'on' && !q.disabled) || (st === 'off' && q.disabled) || (st === 'edited' && q.edited) || (st === 'custom' && q.source === 'custom') || (st === 'hard' && q.lv === 'kho') || (st === 'easy' && q.lv !== 'kho')));
     $('#qList').innerHTML = list.length ? list.map((q) => `
       <div class="qi ${q.disabled ? 'off' : ''}">
         <div>
-          <span class="badge s">${esc(setName(q.set))}</span><span class="chip">${esc(q.topic)}</span>${q.source === 'custom' ? '<span class="badge c">Thêm mới</span>' : ''}${q.edited ? '<span class="badge e">Đã sửa</span>' : ''}${q.disabled ? '<span class="badge x">Đã tắt</span>' : ''}
+          <span class="badge s">${esc(setName(q.set))}</span><span class="chip">${esc(q.topic)}</span>${q.lv === 'kho' ? '<span class="badge h">Khó</span>' : ''}${q.source === 'custom' ? '<span class="badge c">Thêm mới</span>' : ''}${q.edited ? '<span class="badge e">Đã sửa</span>' : ''}${q.disabled ? '<span class="badge x">Đã tắt</span>' : ''}
           <div class="qi-q">${esc(q.q)}</div>
           <div class="qi-o"><b>✓ ${esc(q.o[0])}</b><br>✗ ${q.o.slice(1).map(esc).join('<br>✗ ')}</div>
           <div class="ref" style="margin-top:6px">📖 ${esc(q.ref || '—')} · <span class="muted">${q.id}</span></div>
@@ -199,7 +201,7 @@
     $('#qmTitle').textContent = q ? `Sửa câu hỏi ${q.id}` : 'Thêm câu hỏi';
     f.set.value = q ? q.set || 'quytrinh' : $('#qSet').value || META.sets[0]?.id || 'quytrinh';
     if (q) {
-      f.topic.value = q.topic; f.ref.value = q.ref || ''; f.q.value = q.q; q.o.forEach((o, i) => (f['o' + i].value = o));
+      f.lv.value = q.lv === 'kho' ? 'kho' : 'de'; f.topic.value = q.topic; f.ref.value = q.ref || ''; f.q.value = q.q; q.o.forEach((o, i) => (f['o' + i].value = o));
       const [head, tail = ''] = String(q.ref || '').split('·');
       const dd = META.docs.find((x) => head.includes(x.refKey)); f.doc.value = dd ? dd.id : ''; f.art.value = tail.trim();
     }
@@ -213,7 +215,7 @@
     e.preventDefault();
     const f = e.target;
     try {
-      await api('saveQuestion', { id: editing?.id, set: f.set.value, topic: f.topic.value, ref: f.ref.value, q: f.q.value, o: [0, 1, 2, 3].map((i) => f['o' + i].value) });
+      await api('saveQuestion', { id: editing?.id, set: f.set.value, lv: f.lv.value, topic: f.topic.value, ref: f.ref.value, q: f.q.value, o: [0, 1, 2, 3].map((i) => f['o' + i].value) });
       $('#qModal').hidden = true; await loadBank(); renderBank(); toast('Đã lưu câu hỏi');
     } catch (err) { const m = $('#qmMsg'); m.hidden = false; m.textContent = err.message; }
   });
@@ -281,13 +283,14 @@
       let ref = c[1] || '';
       // Cột 2 chỉ ghi "Điều 5" → ghép với văn bản nguồn đã chọn; ghi đầy đủ thì giữ nguyên
       if (f.doc.value && !META.docs.some((d) => ref.includes(d.refKey))) ref = buildRef(f.doc.value, ref);
-      return { line: n, topic: c[0], ref, q: c[2], o: c.slice(3, 7) };
+      return { line: n, topic: c[0], ref, q: c[2], o: c.slice(3, 7), lv: /^kh/i.test(c[7] || '') ? 'kho' : 'de' };
     });
   }
   function previewBulk() {
     const items = parseBulk();
     const bad = items.filter((x) => !x.topic || !x.q || x.o.length !== 4 || x.o.some((o) => !o)).map((x) => x.line);
-    $('#bPreview').innerHTML = items.length ? `Đọc được <b>${items.length}</b> câu${bad.length ? ` · <span style="color:var(--bad,#c0392b)">thiếu cột ở dòng ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}</span>` : ' · đủ 7 cột ✓'}` : '';
+    const nh = items.filter((x) => x.lv === 'kho').length;
+    $('#bPreview').innerHTML = items.length ? `Đọc được <b>${items.length}</b> câu (${items.length - nh} dễ, ${nh} khó)${bad.length ? ` · <span style="color:var(--bad,#c0392b)">thiếu cột ở dòng ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}</span>` : ' · đủ 7 cột ✓'}` : '';
   }
   $('#bulkQ').onclick = () => { const f = $('#bForm'); f.reset(); f.set.value = $('#qSet').value || META.sets[0]?.id; $('#bMsg').hidden = true; $('#bPreview').textContent = ''; $('#bFileName').textContent = ''; $('#bModal').hidden = false; };
   $('#bCancel').onclick = () => ($('#bModal').hidden = true);
@@ -303,7 +306,7 @@
 
   // ---------- Form mẫu Excel (tải về / nhập lên) ----------
   const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-  const HEAD = ['Chủ đề', 'Điều/khoản', 'Câu hỏi', 'Đáp án ĐÚNG (chép nguyên văn)', 'Phương án sai 1', 'Phương án sai 2', 'Phương án sai 3'];
+  const HEAD = ['Chủ đề', 'Điều/khoản', 'Câu hỏi', 'Đáp án ĐÚNG (chép nguyên văn)', 'Phương án sai 1', 'Phương án sai 2', 'Phương án sai 3', 'Độ khó (Dễ/Khó)'];
   const fileSlug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
   async function downloadTemplate(docId) {
     try {
@@ -319,8 +322,9 @@
       const ex = heads.find((h) => /Điều|Mục/.test(h[0])) || ['Điều 1', '', 1];
       const wb = X.utils.book_new();
       const s1 = X.utils.aoa_to_sheet([HEAD,
-        ['VÍ DỤ – dòng này sẽ bị bỏ qua khi nhập', ex[0], 'Mức lương cố định (N1) của MS là bao nhiêu?', '5.500.000 đồng/tháng', '6.500.000 đồng/tháng', '4.000.000 đồng/tháng', '5.000.000 đồng/tháng']]);
-      s1['!cols'] = [22, 22, 50, 40, 30, 30, 30].map((w) => ({ wch: w }));
+        ['VÍ DỤ – dòng này sẽ bị bỏ qua khi nhập', ex[0], 'Mức lương cố định (N1) của MS là bao nhiêu?', '5.500.000 đồng/tháng', '6.500.000 đồng/tháng', '4.000.000 đồng/tháng', '5.000.000 đồng/tháng', 'Dễ'],
+        ['VÍ DỤ – dòng này sẽ bị bỏ qua khi nhập', ex[0], 'Trường hợp nào sau đây ĐÚNG với quy định về N1 của MS?', 'N1 là lương cố định, trả đủ hằng tháng, không nhân hệ số thưởng', 'N1 là lương cố định, trả đủ hằng tháng, có nhân hệ số thưởng', 'N1 là lương cố định, chỉ trả đủ khi đạt KPI, không nhân hệ số thưởng', 'N1 là lương theo doanh số, trả hằng tháng, không nhân hệ số thưởng', 'Khó']]);
+      s1['!cols'] = [22, 22, 50, 40, 30, 30, 30, 14].map((w) => ({ wch: w }));
       X.utils.book_append_sheet(wb, s1, 'Cau hoi');
       const guide = [
         ['HƯỚNG DẪN SOẠN CÂU HỎI – THE NEW GYM QUIZ'], [],
@@ -333,8 +337,10 @@
         ['Câu hỏi', 'Bắt buộc. Một câu hỏi rõ ràng, có duy nhất 1 đáp án đúng.'],
         ['Đáp án ĐÚNG', 'Bắt buộc, LUÔN ở cột này. Chép NGUYÊN VĂN một cụm trong tài liệu (không thêm bớt sửa từ) để được tô sáng khi xem lại bài.'],
         ['Phương án sai 1–3', 'Bắt buộc đủ 3 phương án, không trùng nhau và không trùng đáp án đúng. Nên cùng dạng với đáp án (cùng là số tiền, số ngày…).'],
+        ['Độ khó', 'Ghi "Dễ" hoặc "Khó" (để trống = Dễ). Câu DỄ: hỏi trực tiếp, phương án sai khác biệt rõ. Câu KHÓ: đánh đố – các phương án gần giống đáp án đúng, chỉ khác 1 chi tiết (con số, mốc thời gian, chức danh, "được/không được"…) khiến người làm phải phân vân. Hệ thống phát đề theo tỷ lệ dễ/khó trong Cài đặt (mặc định 60/40).'],
         [], ['Lưu ý'],
-        ['- Mỗi câu 1 dòng, bắt đầu từ dòng 3 của sheet "Cau hoi". Dòng VÍ DỤ sẽ tự bỏ qua, có thể xóa.'],
+        ['- Mỗi câu 1 dòng, ngay dưới các dòng VÍ DỤ của sheet "Cau hoi". Dòng VÍ DỤ sẽ tự bỏ qua, có thể xóa.'],
+        ['- Nên soạn khoảng 60% câu Dễ và 40% câu Khó cho mỗi tài liệu để đề thi trộn đúng tỷ lệ.'],
         ['- Không cần xáo trộn phương án: hệ thống tự đảo thứ tự khi phát đề.'],
         ['- Không dùng ký tự "|" trong nội dung.'],
         ['- Tối đa 500 câu mỗi lần nhập. Nếu có lỗi, hệ thống báo số dòng và không nhập câu nào cho đến khi sửa xong.'],
@@ -357,7 +363,7 @@
       const X = window.XLSX, wb = X.read(await file.arrayBuffer());
       const sh = wb.Sheets['Cau hoi'] || wb.Sheets[wb.SheetNames[0]];
       const rows = X.utils.sheet_to_json(sh, { header: 1, defval: '', raw: false })
-        .map((r) => r.slice(0, 7).map((c) => String(c).replace(/\|/g, '/').replace(/\s+/g, ' ').trim()))
+        .map((r) => r.slice(0, 8).map((c) => String(c).replace(/\|/g, '/').replace(/\s+/g, ' ').trim()))
         .filter((r) => r.some(Boolean))
         .filter((r) => !(/chủ đề/i.test(r[0]) && /câu hỏi/i.test(r[2])) && !/^VÍ DỤ/i.test(r[0]));
       const g = wb.Sheets['Huong dan'] ? X.utils.sheet_to_json(wb.Sheets['Huong dan'], { header: 1, defval: '' }) : [];
