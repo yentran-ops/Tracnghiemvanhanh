@@ -5,7 +5,7 @@
 - **Đăng nhập:** Họ tên, Phòng ban (Vận hành / Kế toán / Membership / Ban phát triển), Ngày vào làm (không bắt buộc)
 - **Mỗi người 1 lượt/ngày** (theo Họ tên + Phòng ban). Bảng xếp hạng **làm mới lúc 00:00 (giờ Việt Nam)**
 - **Xếp hạng từ cao đến thấp:** số câu đúng, bằng điểm thì ưu tiên thời gian nhanh hơn
-- Mỗi lượt **20 câu ngẫu nhiên** từ ngân hàng **165 câu** (gồm 32 câu đối chiếu giữa các văn bản), đáp án được xáo trộn. Thời gian **40 phút**, hết giờ tự nộp bài
+- Mỗi lượt **20 câu ngẫu nhiên** (mặc định) từ ngân hàng **499 câu** phủ đủ 13 văn bản (gồm 32 câu đối chiếu giữa các văn bản), đáp án được xáo trộn. Thời gian **40 phút** (mặc định), hết giờ tự nộp bài. Số câu, thời gian và danh sách phòng ban chỉnh được trong trang quản trị.
 - Đáp án chỉ nằm ở máy chủ và được chấm ở máy chủ, nên không xem trộm được qua trình duyệt
 - Bảng tổng quan gồm: lượt tham gia, điểm TB, top 3, xếp hạng theo phòng ban, tỷ lệ đúng theo chủ đề, xem lại các ngày trước, xuất CSV
 
@@ -14,6 +14,9 @@
 - **Trang quản trị** `/admin.html` (mật khẩu = biến `ADMIN_PASSWORD`):
   - Câu hỏi: tìm kiếm, lọc theo chủ đề; thêm mới, sửa, tắt/bật, khôi phục nội dung gốc, xóa câu thêm mới
   - Nhân viên: xem ai đã làm hôm nay, **đặt lại PIN**, **cho làm lại hôm nay**
+  - Kết quả: xem và **xóa kết quả** theo ngày (xóa kết quả hôm nay thì nhân viên được làm lại)
+  - Xếp hạng: xem bảng xếp hạng Ngày / Tuần / Tháng, theo phòng ban, câu sai nhiều nhất
+  - Cài đặt: **số câu mỗi đề** (5–100), **thời gian làm bài** (5–180 phút), **thêm/gỡ phòng ban**. Lưu trong Redis, áp dụng ngay cho lượt làm bài mới.
 - **Bảng xếp hạng Ngày / Tuần / Tháng:** tuần tính từ Thứ Hai đến Chủ Nhật. Xếp theo tổng số câu đúng cộng dồn, bằng nhau thì ưu tiên điểm TB cao hơn, rồi đến tổng thời gian ít hơn.
 
 ## Bản cập nhật giao diện (logo & tài liệu)
@@ -22,7 +25,7 @@
 - **Trích dẫn đáp án:** khi xem lại bài, dưới mỗi câu hiện đoạn trích văn bản gốc (tô sáng cụm đáp án, kèm Điều và trang). Bấm vào sẽ mở đúng đoạn đó trong trang Tài liệu.
 - **Bài của tôi:** đăng nhập Họ tên + Phòng ban + PIN để xem lại mọi bài đã làm (lưu khoảng 13 tháng).
 - **Khóa Tài liệu khi đang làm bài:** trang Tài liệu tự khóa trong lúc làm và mở lại ngay sau khi nộp bài hoặc hết giờ.
-- **Nút "Quản trị"** ở góc phải trên. Trang quản trị có hướng dẫn lấy mật khẩu ngay trên màn hình đăng nhập.
+- **Nút "Quản trị"** ở góc phải trên. Hướng dẫn đổi mật khẩu chỉ hiện sau khi đăng nhập quản trị.
 - Dữ liệu văn bản nằm trong `public/docs/*.json`. Khi văn bản gốc thay đổi, cần tạo lại các file này.
 
 ## Cấu trúc
@@ -61,8 +64,8 @@ lib/           questions.js (ngân hàng câu hỏi) · store.js (Redis) · util
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `ADMIN_PASSWORD` | (bắt buộc để dùng trang quản trị) | Mật khẩu vào `/admin.html` |
-| `QUIZ_SIZE` | 20 | Số câu mỗi lượt |
-| `TIME_LIMIT_SEC` | 2400 | Thời gian làm bài (giây) |
+| `QUIZ_SIZE` | 20 | Số câu mỗi lượt (mặc định, khi chưa chỉnh trong trang quản trị) |
+| `TIME_LIMIT_SEC` | 2400 | Thời gian làm bài, giây (mặc định, khi chưa chỉnh trong trang quản trị) |
 
 ## Chạy thử tại máy
 ```

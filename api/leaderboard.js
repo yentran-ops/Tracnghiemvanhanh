@@ -1,5 +1,6 @@
-import { hgetallMany, hasDb } from '../lib/store.js';
-import { today, addDays, rankRows, userKey, QUIZ_SIZE } from '../lib/util.js';
+import { hgetallMany, hcountsMany, hasDb } from '../lib/store.js';
+import { today, addDays, rankRows, userKey } from '../lib/util.js';
+import { getSettings } from '../lib/settings.js';
 import { getBank } from '../lib/bank.js';
 
 // period = day | week (Thứ Hai → Chủ Nhật) | month
@@ -39,8 +40,22 @@ export default async function handler(req, res) {
     }
 
     const bank = await getBank();
+
+    // Top câu trả lời sai nhiều nhất trong kỳ
+    const st = {};
+    (await hcountsMany(dates.map((d) => `qs:${d}`))).forEach((h) => Object.entries(h).forEach(([f, v]) => {
+      const [id, k] = f.split(':'); (st[id] ||= { n: 0, w: 0, c: {} });
+      if (k === 'n') st[id].n += v; else if (k === 'w') st[id].w += v; else st[id].c[k.slice(1)] = (st[id].c[k.slice(1)] || 0) + v;
+    }));
+    const byId = new Map(bank.map((x) => [x.id, x]));
+    const wrong = Object.entries(st).filter(([id, s]) => s.w > 0 && byId.has(id)).map(([id, s]) => {
+      const x = byId.get(id);
+      const [pk] = Object.entries(s.c).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])[0] || [];
+      return { id, topic: x.topic, ref: x.ref, q: x.q, answer: x.o[0], wrongPick: pk != null ? x.o[Number(pk)] : '', w: s.w, n: s.n, rate: Math.round((s.w / Math.max(s.n, 1)) * 100) };
+    }).sort((a, b) => b.w - a.w || b.rate - a.rate).slice(0, 8);
+
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ period, date: base, from, to, today: t, rows, bankSize: bank.length, quizSize: QUIZ_SIZE, persistent: hasDb });
+    return res.status(200).json({ period, date: base, from, to, today: t, rows, wrong, bankSize: bank.length, ...(await getSettings()), persistent: hasDb });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Lỗi máy chủ, vui lòng thử lại.' });

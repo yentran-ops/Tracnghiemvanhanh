@@ -31,15 +31,82 @@
     try { await loadBank(); try { sessionStorage.setItem('tng_admin', key); } catch {} enter(); }
     catch (err) { const m = $('#loginMsg'); m.hidden = false; m.textContent = err.message; }
   });
-  function enter() { $('#loginView').hidden = true; $('#helpView').hidden = false; $('#adminNav').hidden = false; tab('questions'); }
+  function enter() { $('#loginView').hidden = true; $('#helpView').hidden = false; $('#adminNav').hidden = false; $('#backHome').hidden = true; tab('questions'); }
   function logout() { key = ''; try { sessionStorage.removeItem('tng_admin'); } catch {} location.reload(); }
   $('#logout').onclick = logout;
   $('#adminNav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) tab(b.dataset.tab); });
   function tab(t) {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
-    $('#tab-questions').hidden = t !== 'questions'; $('#tab-users').hidden = t !== 'users'; $('#tab-results').hidden = t !== 'results';
-    if (t === 'users') loadUsers(); else if (t === 'results') loadResults(); else renderBank();
+    ['questions', 'users', 'results', 'board', 'settings'].forEach((x) => ($(`#tab-${x}`).hidden = t !== x));
+    ({ users: loadUsers, results: loadResults, board: loadBoard, settings: loadSettings }[t] || renderBank)();
   }
+
+  // ---------- Xếp hạng ----------
+  const ab = { period: 'day', dept: 'all', data: null };
+  const fmtT = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+  async function loadBoard() {
+    try {
+      const qs = new URLSearchParams({ period: ab.period }); if ($('#abDate').value) qs.set('date', $('#abDate').value);
+      const r = await fetch('/api/leaderboard?' + qs); const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Lỗi tải bảng xếp hạng');
+      ab.data = j; $('#abDate').value = j.date; $('#abDate').max = j.today;
+      $('#abLabel').textContent = j.period === 'day' ? `Ngày ${fmtD(j.date)}` : `${j.period === 'week' ? 'Tuần' : 'Tháng'} ${fmtD(j.from)} – ${fmtD(j.to)}`;
+      renderAb();
+    } catch (err) { toast(err.message); }
+  }
+  function renderAb() {
+    const j = ab.data, all = j.rows, n = all.length;
+    const rows = ab.dept === 'all' ? all : all.filter((r) => r.dept === ab.dept);
+    const avg = n ? all.reduce((s, r) => s + r.score, 0) / n : 0;
+    $('#abStats').innerHTML = [['Người tham gia', n], ['Điểm trung bình', n ? avg.toFixed(1) : '–'], ['Điểm cao nhất', all[0]?.score ?? '–'], ['Số câu / đề', j.quizSize]]
+      .map(([k, v]) => `<div class="stat"><div><small>${k}</small><b>${v}</b></div></div>`).join('');
+    const depts = [...new Set([...(j.depts || []), ...all.map((r) => r.dept)])];
+    $('#abDept').innerHTML = ['all', ...depts].map((d) => `<button data-d="${esc(d)}" class="${ab.dept === d ? 'active' : ''}">${d === 'all' ? 'Tất cả' : esc(d)}</button>`).join('');
+    $('#abRows').innerHTML = rows.map((r, i) => `<tr><td>${i + 1}</td><td><b>${esc(r.name)}</b>${r.joinDate ? `<div class="small muted">Vào làm ${fmtD(r.joinDate)}</div>` : ''}</td><td><span class="tag">${esc(r.dept)}</span></td><td class="r">${r.days || 1}</td><td class="r">${r.correct}/${r.total}</td><td class="r"><b>${r.score}</b></td><td class="r">${fmtT(r.duration)}</td></tr>`).join('');
+    $('#abEmpty').hidden = rows.length > 0;
+    $('#abDeptBars').innerHTML = depts.map((d) => { const rs = all.filter((r) => r.dept === d); const a = rs.length ? rs.reduce((s, r) => s + r.score, 0) / rs.length : 0; return { d, n: rs.length, a }; })
+      .sort((x, y) => y.a - x.a).map((x) => `<div><div class="bar-l"><span>${esc(x.d)} <span class="muted">· ${x.n} người</span></span><b>${x.n ? x.a.toFixed(1) : '–'}</b></div><div class="bar"><div style="width:${x.a}%"></div></div></div>`).join('');
+    $('#abWrong').innerHTML = (j.wrong || []).length ? j.wrong.map((w) => `<li><b>${esc(w.q)}</b><span class="meta">${w.w} lượt sai · ${w.rate}% · Đáp án: ${esc(w.answer)}</span></li>`).join('') : '<p class="empty">Chưa có dữ liệu.</p>';
+  }
+  $('#abPeriod').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; ab.period = b.dataset.p; $('#abPeriod').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b)); loadBoard(); });
+  $('#abDept').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { ab.dept = b.dataset.d; renderAb(); } });
+  $('#abDate').addEventListener('change', loadBoard);
+
+  // ---------- Cài đặt ----------
+  let sDepts = [];
+  async function loadSettings() {
+    try {
+      const j = await api('settings'); const f = $('#sForm');
+      f.quizSize.value = j.quizSize; f.minutes.value = Math.round(j.timeLimit / 60); sDepts = [...j.depts];
+      f.quizSize.max = Math.min(j.limits.quizMax, j.bankSize);
+      $('#sQHint').textContent = `Ngân hàng hiện có ${j.bankSize} câu đang dùng (tối đa ${Math.min(j.limits.quizMax, j.bankSize)} câu/đề).`;
+      $('#sSummary').textContent = `Hiện tại: ${j.quizSize} câu · ${Math.round(j.timeLimit / 60)} phút · ${j.depts.length} phòng ban`;
+      $('#sMsg').hidden = true; renderDepts();
+    } catch (err) { toast(err.message); }
+  }
+  function renderDepts() {
+    $('#sDepts').innerHTML = sDepts.map((d, i) => `<div class="dp"><span>${esc(d)}</span><button type="button" data-i="${i}">Gỡ</button></div>`).join('');
+  }
+  $('#sDepts').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-i]'); if (!b) return;
+    const d = sDepts[b.dataset.i];
+    if (sDepts.length === 1) return toast('Cần giữ ít nhất 1 phòng ban');
+    confirmBox(`Gỡ phòng ban "${d}"?`, 'Phòng ban này sẽ không còn để chọn khi đăng nhập làm bài (sau khi bấm Lưu cài đặt). Kết quả cũ vẫn được giữ.', () => { sDepts.splice(b.dataset.i, 1); renderDepts(); }, 'Gỡ');
+  });
+  $('#sAddDept').onclick = () => {
+    const v = $('#sNewDept').value.replace(/\s+/g, ' ').trim();
+    if (!v) return;
+    if (sDepts.some((x) => x.toLowerCase() === v.toLowerCase())) return toast('Phòng ban đã có');
+    sDepts.push(v); $('#sNewDept').value = ''; renderDepts();
+  };
+  $('#sNewDept').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#sAddDept').click(); } });
+  $('#sForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); const f = e.target;
+    try {
+      await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, depts: sDepts });
+      toast('Đã lưu cài đặt'); loadSettings();
+    } catch (err) { const m = $('#sMsg'); m.hidden = false; m.textContent = err.message; }
+  });
 
   // ---------- Câu hỏi ----------
   async function loadBank() { const j = await api('bank'); bank = j.questions; if (!j.persistent) toast('⚠ Chưa kết nối Redis – thay đổi sẽ không được lưu lâu dài'); }

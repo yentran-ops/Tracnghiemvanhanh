@@ -153,10 +153,16 @@
     <div class="stats" id="bStats"></div>
     <div id="podium" class="podium"></div>
     <div class="board-grid">
+      <div class="main-col">
       <div class="card">
         <div class="card-h"><h2>Xếp hạng cá nhân</h2><div class="tabs" id="deptTabs"></div></div>
         <div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Nhân viên</th><th>Phòng ban</th><th class="r col-days">Số ngày</th><th class="r">Đúng</th><th class="r" id="thScore">Điểm</th><th class="r">Thời gian</th></tr></thead><tbody id="bRows"></tbody></table></div>
         <p class="empty" id="bEmpty" hidden>Chưa có ai làm bài trong khoảng thời gian này.</p>
+      </div>
+      <div class="card wrong-card">
+        <div class="card-h"><h2><span class="ico o"><svg class="i"><use href="/icons.svg#target"/></svg></span>Câu trả lời sai nhiều nhất</h2><span class="muted small">Số lượt sai · tỷ lệ sai</span></div>
+        <div class="wr-scroll"><ol id="wrongList" class="wrong-list"></ol></div>
+      </div>
       </div>
       <div class="side-col">
         <div class="card"><div class="card-h"><h2><span class="ico"><svg class="i"><use href="/icons.svg#users"/></svg></span>Theo phòng ban</h2><span class="muted small">Điểm trung bình</span></div><div id="deptBars" class="bars"></div></div>

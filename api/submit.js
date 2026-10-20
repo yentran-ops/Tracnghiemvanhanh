@@ -1,6 +1,6 @@
-import { getJSON, setJSON, hset, hgetall, sadd } from '../lib/store.js';
+import { getJSON, setJSON, hset, hgetall, sadd, hincrMany } from '../lib/store.js';
 import { appendToSheet } from '../lib/sheet.js';
-import { TIME_LIMIT, clean, userKey, rankRows, publicQuestions } from '../lib/util.js';
+import { TIME_LIMIT, clean, userKey, rankRows, publicQuestions, qStatIncr } from '../lib/util.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -25,11 +25,11 @@ export default async function handler(req, res) {
       topics[it.topic] ||= [0, 0];
       topics[it.topic][1]++;
       if (ok) topics[it.topic][0]++;
-      return { ...pub[i], ref: it.ref, chosen, right, ok };
+      return { ...pub[i], ref: it.ref, chosen, right, ok, qid: it.id, pick: chosen === null ? null : it.perm[chosen] };
     });
 
     const now = Date.now();
-    const duration = Math.min(Math.round((now - s.startedAt) / 1000), TIME_LIMIT);
+    const duration = Math.min(Math.round((now - s.startedAt) / 1000), s.timeLimit || TIME_LIMIT);
     const total = s.items.length;
     const result = {
       name: s.name, dept: s.dept, joinDate: s.joinDate, correct, total,
@@ -41,6 +41,7 @@ export default async function handler(req, res) {
     // Lưu bài làm để nhân viên xem lại sau (giữ ~13 tháng)
     await setJSON(`rev:${date}:${uk}`, { result, review }, 60 * 60 * 24 * 400);
     await sadd(`hist:${uk}`, date);
+    await hincrMany(`qs:${date}`, qStatIncr(review, 1));
     await appendToSheet(result, date);
 
     const rows = rankRows(await hgetall(`lb:${date}`));

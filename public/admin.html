@@ -14,12 +14,14 @@
 <body>
 <header class="topbar">
   <div class="wrap topbar-in">
-    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên · Kết quả</small></span></a>
+    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên · Kết quả · Cài đặt</small></span></a>
     <nav class="nav" id="adminNav" hidden>
       <button data-tab="questions" class="active"><svg class="i"><use href="/icons.svg#list"/></svg>Câu hỏi</button>
       <button data-tab="users"><svg class="i"><use href="/icons.svg#users"/></svg>Nhân viên</button>
       <button data-tab="results"><svg class="i"><use href="/icons.svg#list"/></svg>Kết quả</button>
-      <a href="/docs.html" target="_blank"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</a>
+      <button data-tab="board"><svg class="i"><use href="/icons.svg#award"/></svg>Xếp hạng</button>
+      <button data-tab="settings"><svg class="i"><use href="/icons.svg#target"/></svg>Cài đặt</button>
+      <a href="/" title="Về trang làm bài"><svg class="i"><use href="/icons.svg#left"/></svg>Trang làm bài</a>
       <button id="logout"><svg class="i"><use href="/icons.svg#logout"/></svg>Thoát</button>
     </nav>
     <a class="admin-btn" href="/" id="backHome"><svg class="i sm"><use href="/icons.svg#left"/></svg>Về trang làm bài</a>
@@ -88,6 +90,45 @@
     <div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" id="rAll" title="Chọn tất cả"></th><th>#</th><th>Họ tên</th><th>Phòng ban</th><th>Đúng</th><th>Điểm</th><th>Thời gian</th><th>Nộp lúc</th></tr></thead><tbody id="rRows"></tbody></table></div>
       <p class="empty" id="rEmpty" hidden>Không có kết quả nào trong ngày này.</p>
       <p class="muted small" style="margin-top:10px">Xóa kết quả của <b>hôm nay</b>: nhân viên đăng nhập lại là làm lại được bài của ngày hôm nay. Dòng đã ghi vào Google Sheets vẫn giữ nguyên.</p></div>
+  </section>
+
+  <section id="tab-board" hidden>
+    <div class="board-head"><div><h1>Bảng xếp hạng</h1><p class="muted" id="abLabel"></p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="tabs" id="abPeriod"><button data-p="day" class="active">Ngày</button><button data-p="week">Tuần</button><button data-p="month">Tháng</button></div>
+        <input type="date" id="abDate" style="width:auto">
+        <a class="btn ghost" href="/#board" target="_blank">Mở trang công khai</a>
+      </div></div>
+    <div class="stats" id="abStats"></div>
+    <div class="ab-grid">
+      <div class="card"><div class="card-h"><h2>Xếp hạng cá nhân</h2><div class="tabs" id="abDept"></div></div>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Nhân viên</th><th>Phòng ban</th><th class="r">Số ngày</th><th class="r">Đúng</th><th class="r">Điểm</th><th class="r">Thời gian</th></tr></thead><tbody id="abRows"></tbody></table></div>
+        <p class="empty" id="abEmpty" hidden>Chưa có ai làm bài trong khoảng thời gian này.</p></div>
+      <div style="display:grid;gap:18px;align-content:start">
+        <div class="card"><div class="card-h"><h2>Theo phòng ban</h2><span class="muted small">Điểm TB</span></div><div id="abDeptBars" class="bars"></div></div>
+        <div class="card"><div class="card-h"><h2>Câu sai nhiều nhất</h2></div><ol id="abWrong" class="ab-wrong"></ol></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-settings" hidden>
+    <div class="board-head"><div><h1>Cài đặt đề thi</h1><p class="muted" id="sSummary"></p></div></div>
+    <form id="sForm" class="set-grid">
+      <div class="card">
+        <h3>Đề thi</h3>
+        <label>Số câu mỗi đề<input type="number" name="quizSize" min="5" max="100" required></label>
+        <p class="muted small" id="sQHint"></p>
+        <label style="margin-top:12px">Thời gian làm bài (phút)<input type="number" name="minutes" min="5" max="180" required></label>
+        <p class="muted small">Hết giờ hệ thống tự nộp bài. Thay đổi áp dụng cho <b>lượt làm bài bắt đầu sau khi lưu</b>; người đang làm dở giữ nguyên đề và thời gian cũ.</p>
+      </div>
+      <div class="card">
+        <h3>Phòng ban</h3>
+        <div id="sDepts" class="dept-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><input id="sNewDept" placeholder="Tên phòng ban mới" maxlength="40"><button type="button" class="btn ghost" id="sAddDept">+ Thêm</button></div>
+        <p class="muted small" style="margin-top:8px">Phòng ban bị gỡ sẽ không còn hiện ở màn hình đăng nhập làm bài. Kết quả cũ của phòng ban đó vẫn được giữ trên bảng xếp hạng.</p>
+      </div>
+      <div class="set-actions"><div id="sMsg" class="msg" hidden></div><button class="btn primary big">Lưu cài đặt</button></div>
+    </form>
   </section>
 </main>
 

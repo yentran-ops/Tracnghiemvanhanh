@@ -1,5 +1,5 @@
 (() => {
-  const DEPTS = ['Vận hành', 'Kế toán', 'Membership', 'Ban phát triển'];
+  let DEPTS = ['Vận hành', 'Kế toán', 'Membership', 'Ban phát triển'];
   const $ = (s) => document.querySelector(s);
   const D = window.TNGDocs;
   const esc = D.escH;
@@ -256,6 +256,12 @@
     try {
       const j = await api('/api/leaderboard');
       $('#fQ').textContent = `${j.quizSize} câu`;
+      $('#fT').textContent = `${Math.round(j.timeLimit / 60)} phút`;
+      if (j.depts && j.depts.join('|') !== DEPTS.join('|')) {
+        DEPTS = j.depts;
+        deptSeg($('#deptSeg'), dept, (d) => (dept = d));
+        deptSeg($('#mineDept'), mineDept, (d) => (mineDept = d));
+      }
       $('#intro').textContent = `Mỗi lượt ${j.quizSize} câu ngẫu nhiên từ ngân hàng ${j.bankSize} câu, trích nguyên văn bộ quy định khối Club và các quy chế sản phẩm. Sau khi nộp, mỗi đáp án đều kèm đoạn trích văn bản gốc để bạn đối chiếu.`;
       const rows = j.rows, avg = rows.length ? rows.reduce((s, r) => s + r.score, 0) / rows.length : 0;
       $('#miniStats').innerHTML = `<div><small>Tham gia</small><b>${rows.length}</b></div><div><small>Điểm TB</small><b>${rows.length ? avg.toFixed(1) : '–'}</b></div><div><small>Cao nhất</small><b>${rows[0]?.score ?? '–'}</b></div>`;
@@ -304,6 +310,18 @@
     all.forEach((r) => Object.entries(r.topics || {}).forEach(([k, [c, tot]]) => { t[k] ||= [0, 0]; t[k][0] += c; t[k][1] += tot; }));
     const tp = Object.entries(t).map(([k, [c, tot]]) => ({ k, p: (c / tot) * 100 })).sort((a, b) => a.p - b.p);
     $('#topicBars').innerHTML = tp.length ? tp.map((x) => `<div><div class="bar-l"><span>${esc(x.k)}</span><b>${x.p.toFixed(0)}%</b></div><div class="bar ${lvl(x.p)}"><div style="width:${x.p}%"></div></div></div>`).join('') : '<p class="empty">Chưa có dữ liệu.</p>';
+
+    const wr = S.board.wrong || [];
+    $('#wrongList').innerHTML = wr.length ? wr.map((x, i) => `<li>
+      <span class="wr-n">${i + 1}</span>
+      <div class="wr-b">
+        <div class="wr-top"><span class="chip">${esc(x.topic)}</span><span class="wr-s"><b>${x.w}</b> lượt sai · ${x.rate}%</span></div>
+        <div class="wr-q">${esc(x.q)}</div>
+        ${x.wrongPick ? `<div class="wr-a bad">✗ Hay chọn nhầm: ${esc(x.wrongPick)}</div>` : ''}
+        <div class="wr-a ok">✓ Đáp án đúng: ${esc(x.answer)}</div>
+        ${x.ref ? `<a class="wr-ref" href="/docs.html?ref=${encodeURIComponent(x.ref)}&a=${encodeURIComponent(x.answer)}&q=${encodeURIComponent(x.q)}">📖 ${esc(x.ref)}</a>` : ''}
+        <div class="bar ${lvl(100 - x.rate)}"><div style="width:${x.rate}%"></div></div>
+      </div></li>`).join('') : '<p class="empty">Chưa có dữ liệu câu sai trong khoảng thời gian này.</p>';
   }
   $('#deptTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { S.deptFilter = b.dataset.d; renderBoard(); } });
   $('#bDate').addEventListener('change', (e) => loadBoard(e.target.value));

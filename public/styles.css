@@ -209,9 +209,25 @@ mark{background:#ffe2c6;color:#7a3a0b;padding:1px 2px;border-radius:4px}
 .pod.p1 .avatar{width:66px;height:66px;font-size:21px}
 .pod b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pod .s{font-size:24px;font-weight:800;margin-top:6px;color:var(--brand-700)}
 .pod small{color:var(--muted)}
-.board-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;align-items:start}
+.board-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;align-items:stretch}
 .board-grid>.card+.card,.board-grid .card+.card{margin-top:0}
-.side-col{display:grid;gap:18px}
+.side-col{display:grid;gap:18px;align-content:start}
+.main-col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.wrong-card{flex:1;display:flex;flex-direction:column}
+.wr-scroll{position:relative;flex:1;min-height:300px}
+.wr-scroll .wrong-list{position:absolute;inset:0;overflow-y:auto;padding-right:6px;align-content:start}
+@media (max-width:1000px){.wr-scroll{min-height:0}.wr-scroll .wrong-list{position:static;overflow:visible}}
+.wrong-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.wrong-list li{display:flex;gap:12px;padding:12px;border:1px solid var(--line-2);border-radius:14px;background:#fbfdff}
+.wr-n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:#fdeee3;color:var(--orange)}
+.wrong-list li:nth-child(-n+3) .wr-n{background:var(--orange);color:#fff}
+.wr-b{flex:1;min-width:0;display:grid;gap:5px}
+.wr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.wr-s{font-size:13px;color:var(--muted)}.wr-s b{color:var(--bad,#c0392b);font-size:15px}
+.wr-q{font-weight:600;font-size:14.5px;line-height:1.45}
+.wr-a{font-size:13px;line-height:1.4}.wr-a.bad{color:var(--bad,#c0392b)}.wr-a.ok{color:var(--good,#1e8e5a)}
+.wr-ref{font-size:12.5px;color:var(--brand-700);text-decoration:none}.wr-ref:hover{text-decoration:underline}
+.wrong-list .bar{margin-top:2px}
 .table-wrap{overflow-x:auto;margin:0 -8px}
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}

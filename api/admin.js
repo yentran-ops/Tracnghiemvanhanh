@@ -1,8 +1,9 @@
 import crypto from 'node:crypto';
 import { QUESTIONS } from '../lib/questions.js';
 import { getBank, loadEdits, saveEdits } from '../lib/bank.js';
-import { getJSON, getJSONMany, setJSON, del, hdel, hgetall, smembers, hasDb } from '../lib/store.js';
-import { today, clean, rankRows, userKey } from '../lib/util.js';
+import { getSettings, validSettings, saveSettings, LIMITS } from '../lib/settings.js';
+import { getJSON, getJSONMany, setJSON, del, hdel, hgetall, hincrMany, smembers, hasDb } from '../lib/store.js';
+import { today, clean, rankRows, userKey, qStatIncr } from '../lib/util.js';
 
 const BASE_IDS = new Set(QUESTIONS.map((q) => q.id));
 
@@ -44,6 +45,16 @@ export default async function handler(req, res) {
           hasPin: Boolean(users[i].pinHash), today: sess[i] ? (sess[i].result ? 'done' : 'doing') : 'none', fails: fails[i] || 0,
         })).filter(Boolean).sort((x, y) => x.dept.localeCompare(y.dept) || x.name.localeCompare(y.name)),
       });
+    }
+    if (req.method === 'GET' && action === 'settings') {
+      const [s, bank] = await Promise.all([getSettings(), getBank()]);
+      return res.json({ ...s, limits: LIMITS, bankSize: bank.length });
+    }
+    if (req.method === 'POST' && action === 'saveSettings') {
+      const s = validSettings(b);
+      if (typeof s === 'string') return res.status(400).json({ error: s });
+      await saveSettings(s);
+      return res.json({ ok: true, ...s });
     }
     if (req.method === 'GET' && action === 'results') {
       const d = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || '') ? req.query.date : today();
@@ -93,6 +104,8 @@ export default async function handler(req, res) {
       }
       case 'allowRetake': {
         const d = today();
+        const rev = await getJSON(`rev:${d}:${b.uk}`);
+        if (rev) await hincrMany(`qs:${d}`, qStatIncr(rev.review, -1));
         await del(`sess:${d}:${b.uk}`);
         await hdel(`lb:${d}`, b.uk);
         await del(`rev:${d}:${b.uk}`);
@@ -104,6 +117,8 @@ export default async function handler(req, res) {
         const uks = Array.isArray(b.uks) ? b.uks.map(String).slice(0, 500) : [];
         if (!uks.length) return res.status(400).json({ error: 'Chưa chọn kết quả cần xóa.' });
         for (const uk of uks) {
+          const rev = await getJSON(`rev:${d}:${uk}`);
+          if (rev) await hincrMany(`qs:${d}`, qStatIncr(rev.review, -1));
           await del(`sess:${d}:${uk}`);
           await hdel(`lb:${d}`, uk);
           await del(`rev:${d}:${uk}`);
