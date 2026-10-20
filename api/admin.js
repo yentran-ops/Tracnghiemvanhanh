@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { QUESTIONS } from '../lib/questions.js';
 import { getBank, loadEdits, saveEdits } from '../lib/bank.js';
-import { getJSON, getJSONMany, setJSON, del, hdel, smembers, hasDb } from '../lib/store.js';
-import { today, clean } from '../lib/util.js';
+import { getJSON, getJSONMany, setJSON, del, hdel, hgetall, smembers, hasDb } from '../lib/store.js';
+import { today, clean, rankRows, userKey } from '../lib/util.js';
 
 const BASE_IDS = new Set(QUESTIONS.map((q) => q.id));
 
@@ -44,6 +44,11 @@ export default async function handler(req, res) {
           hasPin: Boolean(users[i].pinHash), today: sess[i] ? (sess[i].result ? 'done' : 'doing') : 'none', fails: fails[i] || 0,
         })).filter(Boolean).sort((x, y) => x.dept.localeCompare(y.dept) || x.name.localeCompare(y.name)),
       });
+    }
+    if (req.method === 'GET' && action === 'results') {
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || '') ? req.query.date : today();
+      const rows = rankRows(await hgetall(`lb:${d}`)).map((r) => ({ ...r, topics: undefined, uk: userKey(r.name, r.dept) }));
+      return res.json({ date: d, today: today(), rows });
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -92,6 +97,18 @@ export default async function handler(req, res) {
         await hdel(`lb:${d}`, b.uk);
         await del(`rev:${d}:${b.uk}`);
         return res.json({ ok: true });
+      }
+      // Xóa kết quả (1 hoặc nhiều người) của 1 ngày. Nếu là hôm nay, nhân viên được làm lại bài.
+      case 'deleteResults': {
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(b.date || '') ? b.date : today();
+        const uks = Array.isArray(b.uks) ? b.uks.map(String).slice(0, 500) : [];
+        if (!uks.length) return res.status(400).json({ error: 'Chưa chọn kết quả cần xóa.' });
+        for (const uk of uks) {
+          await del(`sess:${d}:${uk}`);
+          await hdel(`lb:${d}`, uk);
+          await del(`rev:${d}:${uk}`);
+        }
+        return res.json({ ok: true, deleted: uks.length });
       }
       default:
         return res.status(400).json({ error: 'Thao tác không hợp lệ.' });

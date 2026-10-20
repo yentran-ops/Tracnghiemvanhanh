@@ -31,14 +31,14 @@
     try { await loadBank(); try { sessionStorage.setItem('tng_admin', key); } catch {} enter(); }
     catch (err) { const m = $('#loginMsg'); m.hidden = false; m.textContent = err.message; }
   });
-  function enter() { $('#loginView').hidden = true; $('#adminNav').hidden = false; tab('questions'); }
+  function enter() { $('#loginView').hidden = true; $('#helpView').hidden = false; $('#adminNav').hidden = false; tab('questions'); }
   function logout() { key = ''; try { sessionStorage.removeItem('tng_admin'); } catch {} location.reload(); }
   $('#logout').onclick = logout;
   $('#adminNav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) tab(b.dataset.tab); });
   function tab(t) {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
-    $('#tab-questions').hidden = t !== 'questions'; $('#tab-users').hidden = t !== 'users';
-    if (t === 'users') loadUsers(); else renderBank();
+    $('#tab-questions').hidden = t !== 'questions'; $('#tab-users').hidden = t !== 'users'; $('#tab-results').hidden = t !== 'results';
+    if (t === 'users') loadUsers(); else if (t === 'results') loadResults(); else renderBank();
   }
 
   // ---------- Câu hỏi ----------
@@ -126,6 +126,36 @@
     if (b.dataset.u === 'pin') confirmBox('Đặt lại PIN?', `${u.name} sẽ tự đặt PIN mới ở lần đăng nhập kế tiếp.`, async () => { try { await api('resetPin', { uk: u.uk }); toast('Đã đặt lại PIN'); loadUsers(); } catch (err) { toast(err.message); } });
     if (b.dataset.u === 'retake') confirmBox('Cho làm lại hôm nay?', `Kết quả hôm nay của ${u.name} sẽ bị xóa khỏi bảng xếp hạng (dòng đã ghi vào Google Sheets vẫn giữ nguyên).`, async () => { try { await api('allowRetake', { uk: u.uk }); toast('Đã cho phép làm lại'); loadUsers(); } catch (err) { toast(err.message); } });
   });
+
+  // ---------- Kết quả ----------
+  let results = [], rDay = '', rToday = '';
+  const fmtDur = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  async function loadResults() {
+    try {
+      const j = await api('results' + ($('#rDate').value ? `&date=${$('#rDate').value}` : ''));
+      results = j.rows; rDay = j.date; rToday = j.today; $('#rDate').value = j.date; renderResults();
+    } catch (err) { toast(err.message); }
+  }
+  function renderResults() {
+    $('#rSummary').textContent = `${fmtD(rDay)}${rDay === rToday ? ' (hôm nay)' : ''} · ${results.length} bài nộp`;
+    $('#rRows').innerHTML = results.map((r, i) => `<tr>
+      <td><input type="checkbox" class="rChk" value="${esc(r.uk)}"></td><td>${i + 1}</td>
+      <td><b>${esc(r.name)}</b></td><td><span class="tag">${esc(r.dept)}</span></td>
+      <td>${r.correct}/${r.total}</td><td>${r.score}</td><td>${fmtDur(r.duration || 0)}</td>
+      <td>${new Date(r.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</td></tr>`).join('');
+    $('#rEmpty').hidden = results.length > 0; $('#rAll').checked = false; syncDel();
+  }
+  const picked = () => [...document.querySelectorAll('.rChk:checked')].map((c) => c.value);
+  function syncDel() { const n = picked().length; $('#rDel').disabled = !n; $('#rDel').textContent = n ? `Xóa ${n} kết quả đã chọn` : 'Xóa kết quả đã chọn'; }
+  $('#rRows').addEventListener('change', syncDel);
+  $('#rAll').addEventListener('change', (e) => { document.querySelectorAll('.rChk').forEach((c) => (c.checked = e.target.checked)); syncDel(); });
+  $('#rDate').addEventListener('change', loadResults);
+  $('#rDel').onclick = () => {
+    const uks = picked(); if (!uks.length) return;
+    const note = rDay === rToday ? ' Các nhân viên này sẽ được làm lại bài hôm nay.' : '';
+    confirmBox(`Xóa ${uks.length} kết quả ngày ${fmtD(rDay)}?`, `Kết quả và bài làm sẽ bị xóa khỏi bảng xếp hạng, không khôi phục được.${note} (Dòng đã ghi vào Google Sheets vẫn giữ nguyên.)`,
+      async () => { try { const j = await api('deleteResults', { date: rDay, uks }); toast(`Đã xóa ${j.deleted} kết quả`); loadResults(); } catch (err) { toast(err.message); } }, 'Xóa');
+  };
 
   if (key) loadBank().then(enter).catch(() => {});
 })();

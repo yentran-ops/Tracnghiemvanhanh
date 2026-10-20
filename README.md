@@ -1,11 +1,11 @@
-﻿# TNG Quiz – Trắc nghiệm Quy trình & Quy định
+# TNG Quiz – Trắc nghiệm Quy trình & Quy định
 
 Ứng dụng web trắc nghiệm hằng ngày cho nhân sự The New Gym.
 
 - **Đăng nhập:** Họ tên, Phòng ban (Vận hành / Kế toán / Membership / Ban phát triển), Ngày vào làm (không bắt buộc)
 - **Mỗi người 1 lượt/ngày** (theo Họ tên + Phòng ban). Bảng xếp hạng **làm mới lúc 00:00 (giờ Việt Nam)**
 - **Xếp hạng từ cao đến thấp:** số câu đúng, bằng điểm thì ưu tiên thời gian nhanh hơn
-- Mỗi lượt **20 câu ngẫu nhiên** từ ngân hàng **165 câu** (gồm 32 câu đối chiếu giữa các văn bản), đáp án được xáo trộn. Thời gian **15 phút**, hết giờ tự nộp bài
+- Mỗi lượt **20 câu ngẫu nhiên** từ ngân hàng **165 câu** (gồm 32 câu đối chiếu giữa các văn bản), đáp án được xáo trộn. Thời gian **40 phút**, hết giờ tự nộp bài
 - Đáp án chỉ nằm ở máy chủ và được chấm ở máy chủ, nên không xem trộm được qua trình duyệt
 - Bảng tổng quan gồm: lượt tham gia, điểm TB, top 3, xếp hạng theo phòng ban, tỷ lệ đúng theo chủ đề, xem lại các ngày trước, xuất CSV
 
@@ -62,7 +62,7 @@ lib/           questions.js (ngân hàng câu hỏi) · store.js (Redis) · util
 |---|---|---|
 | `ADMIN_PASSWORD` | (bắt buộc để dùng trang quản trị) | Mật khẩu vào `/admin.html` |
 | `QUIZ_SIZE` | 20 | Số câu mỗi lượt |
-| `TIME_LIMIT_SEC` | 900 | Thời gian làm bài (giây) |
+| `TIME_LIMIT_SEC` | 2400 | Thời gian làm bài (giây) |
 
 ## Chạy thử tại máy
 ```

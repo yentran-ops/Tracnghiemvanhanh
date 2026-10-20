@@ -1,5 +1,5 @@
 .narrow{max-width:440px;margin:40px auto}
-.admin-login{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px;margin:20px auto;align-items:start}
+.admin-login{display:grid;grid-template-columns:1fr;gap:18px;max-width:460px;margin:20px auto;align-items:start}
 .admin-login>.card+.card{margin-top:0}
 .help{background:linear-gradient(180deg,var(--brand-50),#fff)}
 .help h3{display:flex;align-items:center;gap:8px;color:var(--brand-700)}

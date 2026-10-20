@@ -14,10 +14,11 @@
 <body>
 <header class="topbar">
   <div class="wrap topbar-in">
-    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên</small></span></a>
+    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên · Kết quả</small></span></a>
     <nav class="nav" id="adminNav" hidden>
       <button data-tab="questions" class="active"><svg class="i"><use href="/icons.svg#list"/></svg>Câu hỏi</button>
       <button data-tab="users"><svg class="i"><use href="/icons.svg#users"/></svg>Nhân viên</button>
+      <button data-tab="results"><svg class="i"><use href="/icons.svg#list"/></svg>Kết quả</button>
       <a href="/docs.html" target="_blank"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</a>
       <button id="logout"><svg class="i"><use href="/icons.svg#logout"/></svg>Thoát</button>
     </nav>
@@ -35,19 +36,25 @@
         <div id="loginMsg" class="msg" hidden></div>
         <button class="btn primary big block">Đăng nhập<svg class="i"><use href="/icons.svg#right"/></svg></button>
       </form>
+      <details class="small muted" style="margin-top:14px">
+        <summary style="cursor:pointer">Quên mật khẩu?</summary>
+        <p style="margin:8px 0 0">Người quản lý dự án trên Vercel mở <b>Settings → Environment Variables</b> để xem hoặc đổi mật khẩu quản trị, sau đó <b>Redeploy</b>.</p>
+      </details>
     </div>
-    <div class="card help">
-      <h3><svg class="i"><use href="/icons.svg#info"/></svg> Mật khẩu ở đâu?</h3>
-      <p class="muted small" style="margin:6px 0 12px">Trang quản trị không có tài khoản riêng. Mật khẩu chính là giá trị của biến <code>ADMIN_PASSWORD</code> do bạn tự đặt trên Vercel:</p>
+  </section>
+
+  <section id="helpView" hidden>
+    <details class="card help" style="margin-bottom:16px">
+      <summary style="cursor:pointer"><h3 style="display:inline-flex;margin:0"><svg class="i"><use href="/icons.svg#info"/></svg> Hướng dẫn mật khẩu quản trị</h3></summary>
+      <p class="muted small" style="margin:12px 0 12px">Trang quản trị không có tài khoản riêng. Mật khẩu chính là giá trị của biến <code>ADMIN_PASSWORD</code> đặt trên Vercel:</p>
       <ol>
         <li>Vào <b>vercel.com</b> → chọn project <b>tngquiz</b></li>
         <li>Mở <b>Settings → Environment Variables</b></li>
-        <li>Bấm <b>Add</b>: Key = <code>ADMIN_PASSWORD</code>, Value = mật khẩu bạn muốn (VD: <code>TNG@admin2026</code>) → <b>Save</b></li>
+        <li>Sửa <code>ADMIN_PASSWORD</code> (hoặc bấm <b>Add</b> nếu chưa có) → nhập mật khẩu mới → <b>Save</b></li>
         <li>Vào <b>Deployments → ⋯ → Redeploy</b></li>
-        <li>Quay lại trang này, nhập đúng mật khẩu vừa đặt</li>
+        <li>Đăng nhập lại bằng mật khẩu mới</li>
       </ol>
-      <p class="muted small" style="margin-top:10px">Quên mật khẩu: vào lại bước 2 để xem hoặc đổi giá trị, rồi Redeploy.</p>
-    </div>
+    </details>
   </section>
 
   <section id="tab-questions" hidden>
@@ -70,6 +77,17 @@
       <input id="uSearch" placeholder="Tìm tên…" style="max-width:260px"></div>
     <div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>Họ tên</th><th>Phòng ban</th><th>Ngày vào làm</th><th>Hôm nay</th><th class="r">Thao tác</th></tr></thead><tbody id="uRows"></tbody></table></div>
       <p class="empty" id="uEmpty" hidden>Chưa có nhân viên nào đăng nhập.</p></div>
+  </section>
+
+  <section id="tab-results" hidden>
+    <div class="board-head"><div><h1>Kết quả làm bài</h1><p class="muted" id="rSummary"></p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="date" id="rDate" style="width:auto">
+        <button class="btn danger" id="rDel" disabled>Xóa kết quả đã chọn</button>
+      </div></div>
+    <div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" id="rAll" title="Chọn tất cả"></th><th>#</th><th>Họ tên</th><th>Phòng ban</th><th>Đúng</th><th>Điểm</th><th>Thời gian</th><th>Nộp lúc</th></tr></thead><tbody id="rRows"></tbody></table></div>
+      <p class="empty" id="rEmpty" hidden>Không có kết quả nào trong ngày này.</p>
+      <p class="muted small" style="margin-top:10px">Xóa kết quả của <b>hôm nay</b>: nhân viên đăng nhập lại là làm lại được bài của ngày hôm nay. Dòng đã ghi vào Google Sheets vẫn giữ nguyên.</p></div>
   </section>
 </main>
 
