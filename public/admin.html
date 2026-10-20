@@ -186,6 +186,7 @@
   <form id="bForm" class="form">
     <div class="two"><label>Đưa vào bộ câu hỏi<select name="set" class="setSel" required></select></label>
     <label>Văn bản nguồn (áp cho các dòng không ghi nguồn)<select name="doc" class="docSel"><option value="">— Không chọn —</option></select></label></div>
+    <div class="tpl-bar"><label class="btn ghost sm" style="margin:0">📂 Chọn file Excel / CSV đã soạn<input type="file" id="bFile" accept=".xlsx,.xls,.csv" hidden></label><button type="button" class="btn ghost sm" id="bTpl">⬇ Tải form mẫu</button><span class="muted small" id="bFileName"></span></div>
     <label>Danh sách câu hỏi – mỗi câu 1 dòng, các cột cách nhau bằng dấu <b>|</b>
       <textarea name="text" rows="10" placeholder="Chủ đề | Điều/khoản | Câu hỏi | Đáp án ĐÚNG | Sai 1 | Sai 2 | Sai 3&#10;Lương thưởng MS | Điều 3 | Mức lương cố định của MS là bao nhiêu? | 5.500.000 đồng/tháng | 6.500.000 đồng/tháng | 4.000.000 đồng/tháng | 5.000.000 đồng/tháng"></textarea></label>
     <p class="small muted">Có thể dán trực tiếp từ Excel/Google Sheets (các cột cách nhau bằng Tab cũng được). Cột "Điều/khoản" có thể để trống hoặc ghi nguồn đầy đủ. Đáp án đúng luôn ở cột thứ 4, hệ thống tự xáo trộn khi phát đề.</p>

@@ -289,7 +289,7 @@
     const bad = items.filter((x) => !x.topic || !x.q || x.o.length !== 4 || x.o.some((o) => !o)).map((x) => x.line);
     $('#bPreview').innerHTML = items.length ? `Đọc được <b>${items.length}</b> câu${bad.length ? ` · <span style="color:var(--bad,#c0392b)">thiếu cột ở dòng ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}</span>` : ' · đủ 7 cột ✓'}` : '';
   }
-  $('#bulkQ').onclick = () => { const f = $('#bForm'); f.reset(); f.set.value = $('#qSet').value || META.sets[0]?.id; $('#bMsg').hidden = true; $('#bPreview').textContent = ''; $('#bModal').hidden = false; };
+  $('#bulkQ').onclick = () => { const f = $('#bForm'); f.reset(); f.set.value = $('#qSet').value || META.sets[0]?.id; $('#bMsg').hidden = true; $('#bPreview').textContent = ''; $('#bFileName').textContent = ''; $('#bModal').hidden = false; };
   $('#bCancel').onclick = () => ($('#bModal').hidden = true);
   $('#bForm').text.addEventListener('input', previewBulk);
   $('#bForm').doc.addEventListener('change', previewBulk);
@@ -301,6 +301,75 @@
     } catch (err) { const m = $('#bMsg'); m.hidden = false; m.textContent = err.message; }
   });
 
+  // ---------- Form mẫu Excel (tải về / nhập lên) ----------
+  const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  const HEAD = ['Chủ đề', 'Điều/khoản', 'Câu hỏi', 'Đáp án ĐÚNG (chép nguyên văn)', 'Phương án sai 1', 'Phương án sai 2', 'Phương án sai 3'];
+  const fileSlug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+  async function downloadTemplate(docId) {
+    try {
+      await TNGDocBuild.loadScript(XLSX_URL);
+      const X = window.XLSX, d = META.docs.find((x) => x.id === docId);
+      let heads = [];
+      if (d) {
+        const doc = await TNGDocs.loadDoc(d.id);
+        const seen = new Set();
+        heads = doc.blocks.filter((b) => b.art && b.t !== 'p').filter((b) => { const k = (b.ch || '') + b.art; if (seen.has(k)) return false; seen.add(k); return true; })
+          .map((b) => [[b.ch, b.art].filter(Boolean).join(', '), b.text.replace(/^(Điều|Mục) \d+\.\s*/, ''), b.page]);
+      }
+      const ex = heads.find((h) => /Điều|Mục/.test(h[0])) || ['Điều 1', '', 1];
+      const wb = X.utils.book_new();
+      const s1 = X.utils.aoa_to_sheet([HEAD,
+        ['VÍ DỤ – dòng này sẽ bị bỏ qua khi nhập', ex[0], 'Mức lương cố định (N1) của MS là bao nhiêu?', '5.500.000 đồng/tháng', '6.500.000 đồng/tháng', '4.000.000 đồng/tháng', '5.000.000 đồng/tháng']]);
+      s1['!cols'] = [22, 22, 50, 40, 30, 30, 30].map((w) => ({ wch: w }));
+      X.utils.book_append_sheet(wb, s1, 'Cau hoi');
+      const guide = [
+        ['HƯỚNG DẪN SOẠN CÂU HỎI – THE NEW GYM QUIZ'], [],
+        ['Tài liệu', d ? d.title : '(chưa chọn – chọn văn bản nguồn khi nhập)'],
+        ['Mã trích dẫn', d ? d.refKey : ''],
+        ['MA_TAI_LIEU', d ? d.id : ''], [],
+        ['Cột', 'Cách điền'],
+        ['Chủ đề', 'Bắt buộc. Nhóm kiến thức, VD: "Lương thưởng MS". Dùng để thống kê tỷ lệ đúng theo chủ đề.'],
+        ['Điều/khoản', 'Nên điền, chép đúng như sheet "Dieu khoan": "Điều 5" hoặc "Chương 2, Điều 5" hoặc "Mục 3". Hệ thống ghép với tên tài liệu để dẫn trích đúng đoạn.'],
+        ['Câu hỏi', 'Bắt buộc. Một câu hỏi rõ ràng, có duy nhất 1 đáp án đúng.'],
+        ['Đáp án ĐÚNG', 'Bắt buộc, LUÔN ở cột này. Chép NGUYÊN VĂN một cụm trong tài liệu (không thêm bớt sửa từ) để được tô sáng khi xem lại bài.'],
+        ['Phương án sai 1–3', 'Bắt buộc đủ 3 phương án, không trùng nhau và không trùng đáp án đúng. Nên cùng dạng với đáp án (cùng là số tiền, số ngày…).'],
+        [], ['Lưu ý'],
+        ['- Mỗi câu 1 dòng, bắt đầu từ dòng 3 của sheet "Cau hoi". Dòng VÍ DỤ sẽ tự bỏ qua, có thể xóa.'],
+        ['- Không cần xáo trộn phương án: hệ thống tự đảo thứ tự khi phát đề.'],
+        ['- Không dùng ký tự "|" trong nội dung.'],
+        ['- Tối đa 500 câu mỗi lần nhập. Nếu có lỗi, hệ thống báo số dòng và không nhập câu nào cho đến khi sửa xong.'],
+      ];
+      const s2 = X.utils.aoa_to_sheet(guide); s2['!cols'] = [{ wch: 20 }, { wch: 110 }];
+      X.utils.book_append_sheet(wb, s2, 'Huong dan');
+      if (heads.length) {
+        const s3 = X.utils.aoa_to_sheet([['Điều/khoản (chép vào cột B)', 'Tiêu đề', 'Trang'], ...heads]);
+        s3['!cols'] = [{ wch: 26 }, { wch: 80 }, { wch: 8 }];
+        X.utils.book_append_sheet(wb, s3, 'Dieu khoan');
+      }
+      X.writeFile(wb, `Form-cau-hoi_${fileSlug(d ? d.refKey : 'tai-lieu')}.xlsx`);
+    } catch (err) { toast(err.message || 'Không tạo được form mẫu'); }
+  }
+  $('#bTpl').onclick = () => downloadTemplate($('#bForm').doc.value);
+  $('#bFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      await TNGDocBuild.loadScript(XLSX_URL);
+      const X = window.XLSX, wb = X.read(await file.arrayBuffer());
+      const sh = wb.Sheets['Cau hoi'] || wb.Sheets[wb.SheetNames[0]];
+      const rows = X.utils.sheet_to_json(sh, { header: 1, defval: '', raw: false })
+        .map((r) => r.slice(0, 7).map((c) => String(c).replace(/\|/g, '/').replace(/\s+/g, ' ').trim()))
+        .filter((r) => r.some(Boolean))
+        .filter((r) => !(/chủ đề/i.test(r[0]) && /câu hỏi/i.test(r[2])) && !/^VÍ DỤ/i.test(r[0]));
+      const g = wb.Sheets['Huong dan'] ? X.utils.sheet_to_json(wb.Sheets['Huong dan'], { header: 1, defval: '' }) : [];
+      const docId = (g.find((r) => r[0] === 'MA_TAI_LIEU') || [])[1];
+      const f = $('#bForm');
+      if (docId && META.docs.some((x) => x.id === docId)) f.doc.value = docId;
+      f.text.value = rows.map((r) => r.join(' | ')).join('\n');
+      $('#bFileName').textContent = file.name; previewBulk();
+    } catch (err) { const m = $('#bMsg'); m.hidden = false; m.textContent = 'Không đọc được file: ' + (err.message || ''); }
+    e.target.value = '';
+  });
+
   // ---------- Tài liệu ----------
   let docBlocks = null;
   async function loadDocs() {
@@ -310,10 +379,12 @@
       const groups = [...new Set(META.docs.map((x) => x.group))];
       $('#dList').innerHTML = groups.map((g) => `<h3 class="d-group">${esc(g)}</h3>` + META.docs.filter((x) => x.group === g).map((x) => `
         <div class="d-item"><div><b>${esc(x.title)}</b><div class="muted small">Mã trích dẫn: <code>${esc(x.refKey)}</code> · ${x.pages || 1} trang${x.custom ? ' · tải lên ' + new Date(x.at).toLocaleDateString('vi-VN') : ''}</div></div>
-        <div class="d-act"><a class="btn ghost sm" href="/docs.html?doc=${encodeURIComponent(x.id)}" target="_blank">Xem</a><button class="btn ghost sm" data-dq="${esc(x.id)}">Thêm câu hỏi</button>${x.custom ? `<button class="btn danger sm" data-dd="${esc(x.id)}">Xóa</button>` : ''}</div></div>`).join('')).join('');
+        <div class="d-act"><a class="btn ghost sm" href="/docs.html?doc=${encodeURIComponent(x.id)}" target="_blank">Xem</a><button class="btn ghost sm" data-tpl="${esc(x.id)}">⬇ Form mẫu</button><button class="btn ghost sm" data-dq="${esc(x.id)}">Nhập câu hỏi</button>${x.custom ? `<button class="btn danger sm" data-dd="${esc(x.id)}">Xóa</button>` : ''}</div></div>`).join('')).join('');
     } catch (err) { toast(err.message); }
   }
   $('#dList').addEventListener('click', (e) => {
+    const tp = e.target.closest('[data-tpl]');
+    if (tp) { downloadTemplate(tp.dataset.tpl); return; }
     const q = e.target.closest('[data-dq]');
     if (q) { $('#bulkQ').click(); $('#bForm').doc.value = q.dataset.dq; return; }
     const b = e.target.closest('[data-dd]'); if (!b) return;

@@ -87,5 +87,5 @@
     return out.map((x, k) => ({ ...x, id: 'b' + k }));
   }
 
-  root.TNGDocBuild = { readFile, toBlocks };
+  root.TNGDocBuild = { readFile, toBlocks, loadScript };
 })(window);
