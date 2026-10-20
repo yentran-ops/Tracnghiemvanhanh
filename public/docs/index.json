@@ -1,0 +1,119 @@
+[
+ {
+  "id": "qd272",
+  "title": "QĐ 272/2026/QĐ-TND – Bộ quy định vận hành Club",
+  "refKey": "QĐ 272",
+  "group": "Quy định nội bộ",
+  "source": "Thư mục TNG (file PDF)",
+  "file": "272-2026-QD-TND Bộ quy định khối Club.pdf",
+  "pages": 43
+ },
+ {
+  "id": "qd260",
+  "title": "QĐ 260/2026/QĐ-TND – Quy chế sản phẩm Membership",
+  "refKey": "QĐ 260",
+  "group": "Quy chế sản phẩm",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "260-2026-QĐ-TND Quy chế sản phẩm Membership.pdf",
+  "pages": 14
+ },
+ {
+  "id": "qd261",
+  "title": "QĐ 261/2026/QĐ-TND – Điều khoản và Điều kiện thành viên",
+  "refKey": "QĐ 261",
+  "group": "Quy chế sản phẩm",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "261-2026-QĐ-TND Điều khoản và Điều kiện thành viên hệ thống phòng tập The New Gym.pdf",
+  "pages": 10
+ },
+ {
+  "id": "qd262",
+  "title": "QĐ 262/2026/QĐ-TND – Quy chế sản phẩm Personal Training (PT)",
+  "refKey": "QĐ 262",
+  "group": "Quy chế sản phẩm",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "262-2026-QĐ-TND Quy chế sản phẩm Personal Training (PT).pdf",
+  "pages": 18
+ },
+ {
+  "id": "qd263",
+  "title": "QĐ 263/2026/QĐ-TND – Quy định sử dụng trả góp BNPL",
+  "refKey": "QĐ 263",
+  "group": "Quy chế sản phẩm",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "263-2026-QĐ-TND Quy định sử dụng phương thức thanh toán trả góp Buy Now Pay Later (BNPL).pdf",
+  "pages": 13
+ },
+ {
+  "id": "qd264",
+  "title": "QĐ 264/2026/QĐ-TND – Quy chế Quỹ tặng Membership kèm gói PT",
+  "refKey": "QĐ 264",
+  "group": "Quy chế sản phẩm",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "264-2026-QĐ-TND Quy chế Quỹ tặng Membership kèm gói PT.pdf",
+  "pages": 7
+ },
+ {
+  "id": "cs-mbs",
+  "title": "Chính sách sử dụng gói Membership",
+  "refKey": "Chính sách sử dụng gói Membership",
+  "group": "Chính sách công khai (cho khách hàng)",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "Chính sách sử dụng gói Membership tại hệ thống phòng tập The New Gym.pdf",
+  "pages": 11
+ },
+ {
+  "id": "cs-pt",
+  "title": "Chính sách sử dụng gói Personal Training (PT)",
+  "refKey": "Chính sách sử dụng gói PT",
+  "group": "Chính sách công khai (cho khách hàng)",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "Chính sách sử dụng gói Personal Training (PT) tại hệ thống phòng tập The New Gym.pdf",
+  "pages": 11
+ },
+ {
+  "id": "cs-tg",
+  "title": "Chính sách thanh toán trả góp gói PT",
+  "refKey": "Chính sách thanh toán trả góp",
+  "group": "Chính sách công khai (cho khách hàng)",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "Chính sách thanh toán trả góp gói PT tại hệ thống phòng tập The New Gym.pdf",
+  "pages": 3
+ },
+ {
+  "id": "dkdk",
+  "title": "Điều khoản và Điều kiện thành viên (bản công khai)",
+  "refKey": "Điều khoản và Điều kiện thành viên",
+  "group": "Chính sách công khai (cho khách hàng)",
+  "source": "[01.10.26] Quy chế sản phẩm TNG (zip)",
+  "file": "Điều khoản và Điều kiện thành viên tại hệ thống phòng tập The New Gym.pdf",
+  "pages": 9
+ },
+ {
+  "id": "sop01",
+  "title": "SOP-CLB-01 – Quy chuẩn điền Hợp đồng dịch vụ huấn luyện cá nhân",
+  "refKey": "SOP-CLB-01",
+  "group": "Hợp đồng & SOP",
+  "source": "(18.9.26) HĐPT + Phụ lục trả góp (zip)",
+  "file": "[UPDATE-01] SOP-CLB-01 Quy chuẩn điền HĐPT (2).pdf",
+  "pages": 3
+ },
+ {
+  "id": "hdpt",
+  "title": "Hợp đồng dịch vụ PT (mẫu cập nhật 18.9)",
+  "refKey": "Hợp đồng dịch vụ PT",
+  "group": "Hợp đồng & SOP",
+  "source": "(18.9.26) HĐPT + Phụ lục trả góp (zip)",
+  "file": "[Update 18.9] Hợp đồng dịch vụ PT – The New Gym (Form điền).pdf",
+  "pages": 4
+ },
+ {
+  "id": "pl1",
+  "title": "Phụ lục 1 – Xác nhận thanh toán trả góp (mẫu 18.9)",
+  "refKey": "Phụ lục 1 – Xác nhận thanh toán trả góp",
+  "group": "Hợp đồng & SOP",
+  "source": "(18.9.26) HĐPT + Phụ lục trả góp (zip)",
+  "file": "Phụ lục 1 – Xác nhận thanh toán trả góp – The New Gym (form in ấn).pdf",
+  "pages": 2
+ }
+]

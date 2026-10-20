@@ -90,6 +90,7 @@ export default async function handler(req, res) {
         const d = today();
         await del(`sess:${d}:${b.uk}`);
         await hdel(`lb:${d}`, b.uk);
+        await del(`rev:${d}:${b.uk}`);
         return res.json({ ok: true });
       }
       default:

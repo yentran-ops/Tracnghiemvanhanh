@@ -14,23 +14,40 @@
 <body>
 <header class="topbar">
   <div class="wrap topbar-in">
-    <a class="brand" href="/"><span class="logo">TNG</span><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên</small></span></a>
+    <a class="brand" href="/"><img src="/logo.png" alt="The New Gym"><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên</small></span></a>
     <nav class="nav" id="adminNav" hidden>
-      <button data-tab="questions" class="active">Câu hỏi</button>
-      <button data-tab="users">Nhân viên</button>
-      <button id="logout">Thoát</button>
+      <button data-tab="questions" class="active"><svg class="i"><use href="/icons.svg#list"/></svg>Câu hỏi</button>
+      <button data-tab="users"><svg class="i"><use href="/icons.svg#users"/></svg>Nhân viên</button>
+      <a href="/docs.html" target="_blank"><svg class="i"><use href="/icons.svg#book"/></svg>Tài liệu</a>
+      <button id="logout"><svg class="i"><use href="/icons.svg#logout"/></svg>Thoát</button>
     </nav>
+    <a class="admin-btn" href="/" id="backHome"><svg class="i sm"><use href="/icons.svg#left"/></svg>Về trang làm bài</a>
   </div>
 </header>
 <main class="wrap">
-  <section id="loginView" class="card narrow">
-    <h1>Đăng nhập quản trị</h1>
-    <p class="muted">Nhập mật khẩu quản trị (biến <code>ADMIN_PASSWORD</code> trên Vercel).</p>
-    <form id="loginForm" class="form">
-      <label>Mật khẩu<input type="password" name="pw" required autocomplete="current-password"></label>
-      <div id="loginMsg" class="msg" hidden></div>
-      <button class="btn primary big">Đăng nhập</button>
-    </form>
+  <section id="loginView" class="admin-login">
+    <div class="card">
+      <span class="ico o" style="width:48px;height:48px"><svg class="i lg"><use href="/icons.svg#lock"/></svg></span>
+      <h1 style="margin:14px 0 6px">Đăng nhập quản trị</h1>
+      <p class="muted">Dành cho người quản lý ngân hàng câu hỏi và tài khoản nhân viên.</p>
+      <form id="loginForm" class="form" style="margin-top:18px">
+        <label>Mật khẩu quản trị<input type="password" name="pw" required autocomplete="current-password" placeholder="Nhập mật khẩu ADMIN_PASSWORD"></label>
+        <div id="loginMsg" class="msg" hidden></div>
+        <button class="btn primary big block">Đăng nhập<svg class="i"><use href="/icons.svg#right"/></svg></button>
+      </form>
+    </div>
+    <div class="card help">
+      <h3><svg class="i"><use href="/icons.svg#info"/></svg> Mật khẩu ở đâu?</h3>
+      <p class="muted small" style="margin:6px 0 12px">Trang quản trị không có tài khoản riêng. Mật khẩu chính là giá trị của biến <code>ADMIN_PASSWORD</code> do bạn tự đặt trên Vercel:</p>
+      <ol>
+        <li>Vào <b>vercel.com</b> → chọn project <b>tngquiz</b></li>
+        <li>Mở <b>Settings → Environment Variables</b></li>
+        <li>Bấm <b>Add</b>: Key = <code>ADMIN_PASSWORD</code>, Value = mật khẩu bạn muốn (VD: <code>TNG@admin2026</code>) → <b>Save</b></li>
+        <li>Vào <b>Deployments → ⋯ → Redeploy</b></li>
+        <li>Quay lại trang này, nhập đúng mật khẩu vừa đặt</li>
+      </ol>
+      <p class="muted small" style="margin-top:10px">Quên mật khẩu: vào lại bước 2 để xem hoặc đổi giá trị, rồi Redeploy.</p>
+    </div>
   </section>
 
   <section id="tab-questions" hidden>
