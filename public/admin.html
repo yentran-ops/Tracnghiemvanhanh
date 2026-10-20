@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>TNG Quiz – Quản trị</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="/"><span class="logo">TNG</span><span class="brand-t"><b>Quản trị Quiz</b><small>Câu hỏi · Nhân viên</small></span></a>
+    <nav class="nav" id="adminNav" hidden>
+      <button data-tab="questions" class="active">Câu hỏi</button>
+      <button data-tab="users">Nhân viên</button>
+      <button id="logout">Thoát</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <section id="loginView" class="card narrow">
+    <h1>Đăng nhập quản trị</h1>
+    <p class="muted">Nhập mật khẩu quản trị (biến <code>ADMIN_PASSWORD</code> trên Vercel).</p>
+    <form id="loginForm" class="form">
+      <label>Mật khẩu<input type="password" name="pw" required autocomplete="current-password"></label>
+      <div id="loginMsg" class="msg" hidden></div>
+      <button class="btn primary big">Đăng nhập</button>
+    </form>
+  </section>
+
+  <section id="tab-questions" hidden>
+    <div class="board-head">
+      <div><h1>Ngân hàng câu hỏi</h1><p class="muted" id="qSummary"></p></div>
+      <button class="btn primary" id="addQ">+ Thêm câu hỏi</button>
+    </div>
+    <div class="card">
+      <div class="filters">
+        <input id="qSearch" placeholder="Tìm theo nội dung, nguồn…">
+        <select id="qTopic"><option value="">Tất cả chủ đề</option></select>
+        <select id="qStatus"><option value="">Tất cả trạng thái</option><option value="on">Đang dùng</option><option value="off">Đã tắt</option><option value="edited">Đã chỉnh sửa</option><option value="custom">Câu thêm mới</option></select>
+      </div>
+      <div id="qList"></div>
+    </div>
+  </section>
+
+  <section id="tab-users" hidden>
+    <div class="board-head"><div><h1>Nhân viên</h1><p class="muted" id="uSummary"></p></div>
+      <input id="uSearch" placeholder="Tìm tên…" style="max-width:260px"></div>
+    <div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>Họ tên</th><th>Phòng ban</th><th>Ngày vào làm</th><th>Hôm nay</th><th class="r">Thao tác</th></tr></thead><tbody id="uRows"></tbody></table></div>
+      <p class="empty" id="uEmpty" hidden>Chưa có nhân viên nào đăng nhập.</p></div>
+  </section>
+</main>
+
+<div class="modal" id="qModal" hidden><div class="modal-box wide">
+  <h3 id="qmTitle">Thêm câu hỏi</h3>
+  <form id="qForm" class="form">
+    <label>Chủ đề<input name="topic" list="topicList" required></label><datalist id="topicList"></datalist>
+    <label>Nguồn (văn bản · điều khoản)<input name="ref" placeholder="VD: QĐ 272/2026/QĐ-TND – Bộ quy định khối Club · Chương 4, Điều 10"></label>
+    <label>Câu hỏi<textarea name="q" rows="3" required></textarea></label>
+    <label class="ok-l">✓ Đáp án đúng<input name="o0" required></label>
+    <label>✗ Phương án sai 1<input name="o1" required></label>
+    <label>✗ Phương án sai 2<input name="o2" required></label>
+    <label>✗ Phương án sai 3<input name="o3" required></label>
+    <p class="small muted">Lưu ý: dùng đúng từ ngữ trong văn bản gốc, không thêm bớt. Hệ thống tự xáo trộn thứ tự phương án khi phát đề.</p>
+    <div id="qmMsg" class="msg" hidden></div>
+    <div class="modal-act"><button type="button" class="btn ghost" id="qmCancel">Hủy</button><button class="btn primary">Lưu</button></div>
+  </form>
+</div></div>
+<div class="modal" id="modal" hidden><div class="modal-box"><h3 id="mTitle"></h3><p id="mText" class="muted"></p><div class="modal-act"><button class="btn ghost" id="mNo">Quay lại</button><button class="btn primary" id="mYes">Đồng ý</button></div></div></div>
+<div class="toast" id="toast" hidden></div>
+<script src="/admin.js"></script>
+</body>
+</html>

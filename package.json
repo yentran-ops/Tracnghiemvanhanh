@@ -1,0 +1,13 @@
+{
+  "name": "tng-quiz",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trắc nghiệm hằng ngày về quy trình, quy định khối Club – The New Gym",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
