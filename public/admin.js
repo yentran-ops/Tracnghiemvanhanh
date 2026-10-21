@@ -78,7 +78,7 @@
       .map(([k, v]) => `<div class="stat"><div><small>${k}</small><b>${v}</b></div></div>`).join('');
     const depts = [...new Set([...(j.depts || []), ...all.map((r) => r.dept)])];
     $('#abDept').innerHTML = ['all', ...depts].map((d) => `<button data-d="${esc(d)}" class="${ab.dept === d ? 'active' : ''}">${d === 'all' ? 'Tất cả' : esc(d)}</button>`).join('');
-    $('#abRows').innerHTML = rows.map((r, i) => `<tr><td>${i + 1}</td><td><b>${esc(r.name)}</b>${r.joinDate ? `<div class="small muted">Vào làm ${fmtD(r.joinDate)}</div>` : ''}</td><td><span class="tag">${esc(r.dept)}</span></td><td class="r">${r.days || 1}</td><td class="r">${r.correct}/${r.total}</td><td class="r"><b>${r.score}</b></td><td class="r">${fmtT(r.duration)}</td></tr>`).join('');
+    $('#abRows').innerHTML = rows.map((r, i) => `<tr><td>${i + 1}</td><td><b>${esc(r.name)}</b>${r.startedAt && (r.days || 1) === 1 ? `<div class="small muted">Bắt đầu ${new Date(r.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}</td><td><span class="tag">${esc(r.dept)}</span></td><td class="r">${r.days || 1}</td><td class="r">${r.correct}/${r.total}</td><td class="r"><b>${r.score}</b></td><td class="r">${fmtT(r.duration)}</td></tr>`).join('');
     $('#abEmpty').hidden = rows.length > 0;
     $('#abDeptBars').innerHTML = depts.map((d) => { const rs = all.filter((r) => r.dept === d); const a = rs.length ? rs.reduce((s, r) => s + r.score, 0) / rs.length : 0; return { d, n: rs.length, a }; })
       .sort((x, y) => y.a - x.a).map((x) => `<div><div class="bar-l"><span>${esc(x.d)} <span class="muted">· ${x.n} người</span></span><b>${x.n ? x.a.toFixed(1) : '–'}</b></div><div class="bar"><div style="width:${x.a}%"></div></div></div>`).join('');
@@ -338,8 +338,12 @@
 
   // ---------- Nhân viên ----------
   async function loadUsers() {
-    try { users = (await api('users')).users; renderUsers(); } catch (err) { toast(err.message); }
+    try { users = (await api('users')).users; renderUsers(); tickLive(); } catch (err) { toast(err.message); }
   }
+  // Tự cập nhật: đồng hồ "đang làm" chạy từng giây; danh sách tải lại mỗi 15 giây khi đang mở tab Nhân viên
+  function tickLive() { document.querySelectorAll('[data-live]').forEach((el) => { const t = Number(el.dataset.live); if (t) el.textContent = 'Đang làm ' + fmtT(Math.max(0, Math.round((Date.now() - t) / 1000))); }); }
+  setInterval(tickLive, 1000);
+  setInterval(() => { if (!$('#tab-users').hidden && !document.hidden && key) loadUsers(); }, 15000);
   function renderUsers() {
     const s = $('#uSearch').value.trim().toLowerCase();
     const list = users.filter((u) => !s || u.name.toLowerCase().includes(s));
@@ -347,7 +351,7 @@
     const stt = { done: ['done', 'Đã làm'], doing: ['doing', 'Đang làm'], none: ['none', 'Chưa làm'] };
     $('#uRows').innerHTML = list.map((u) => `<tr>
       <td><b>${esc(u.name)}</b>${!u.hasPin ? '<div class="small" style="color:#b45309">PIN đã đặt lại – chờ đặt mới</div>' : ''}${u.fails ? `<div class="small" style="color:var(--bad)">Sai PIN ${u.fails} lần hôm nay</div>` : ''}</td>
-      <td><span class="tag">${esc(u.dept)}</span></td><td>${fmtD(u.joinDate)}</td>
+      <td><span class="tag">${esc(u.dept)}</span></td><td>${u.startedAt ? `${new Date(u.startedAt).toLocaleTimeString('vi-VN')}<div class="small muted" data-live="${u.today === 'doing' ? u.startedAt : ''}">${u.today === 'doing' ? '' : u.endedAt ? 'Làm trong ' + fmtT(Math.round((u.endedAt - u.startedAt) / 1000)) : ''}</div>` : '<span class="muted">—</span>'}</td>
       <td><span class="st ${stt[u.today][0]}">${stt[u.today][1]}</span></td>
       <td class="r"><button class="btn ghost sm" data-u="pin" data-k="${esc(u.uk)}">Đặt lại PIN</button> <button class="btn ghost sm" data-u="retake" data-k="${esc(u.uk)}" ${u.today === 'none' ? 'disabled' : ''}>Cho làm lại hôm nay</button></td>
     </tr>`).join('');

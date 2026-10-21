@@ -2,7 +2,7 @@
 
 Ứng dụng web trắc nghiệm hằng ngày cho nhân sự The New Gym.
 
-- **Đăng nhập:** Họ tên, Phòng ban (Vận hành / Kế toán / Membership / Ban phát triển), Ngày vào làm (không bắt buộc)
+- **Đăng nhập:** Họ tên, Phòng ban (Vận hành / Kế toán / Membership / Ban phát triển)
 - **Mỗi người 1 lượt/ngày** (theo Họ tên + Phòng ban). Bảng xếp hạng **làm mới lúc 00:00 (giờ Việt Nam)**
 - **Xếp hạng từ cao đến thấp:** số câu đúng, bằng điểm thì ưu tiên thời gian nhanh hơn
 - Mỗi lượt **20 câu ngẫu nhiên** (mặc định) từ ngân hàng **581 câu** chia thành 2 bộ: **Quy trình – Quy định** (499 câu, 13 văn bản, gồm 32 câu đối chiếu) và **Quy chế lương thưởng** (82 câu, QĐ 265–268 và Tóm tắt cách tính), đáp án được xáo trộn. Thời gian **40 phút** (mặc định), hết giờ tự nộp bài. Số câu, thời gian và danh sách phòng ban chỉnh được trong trang quản trị.

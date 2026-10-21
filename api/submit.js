@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     const duration = Math.min(Math.round((now - s.startedAt) / 1000), s.timeLimit || TIME_LIMIT);
     const total = s.items.length;
     const result = {
-      name: s.name, dept: s.dept, joinDate: s.joinDate, correct, total,
+      name: s.name, dept: s.dept, joinDate: s.joinDate, correct, total, startedAt: s.startedAt,
       score: Math.round((correct / total) * 1000) / 10, duration, at: now, topics,
     };
     s.result = result;

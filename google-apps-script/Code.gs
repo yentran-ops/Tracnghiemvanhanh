@@ -5,7 +5,7 @@
  */
 const SECRET = 'DOI-CHUOI-BI-MAT-NAY';
 const SHEET_NAME = 'Kết quả';
-const HEADERS = ['Ngày làm bài', 'Thời điểm nộp', 'Họ và tên', 'Phòng ban', 'Ngày vào làm',
+const HEADERS = ['Ngày làm bài', 'Thời điểm nộp', 'Họ và tên', 'Phòng ban', 'Giờ bắt đầu',
   'Số câu đúng', 'Tổng số câu', 'Điểm', 'Thời gian (giây)', 'Thời gian (mm:ss)', 'Chi tiết theo chủ đề'];
 
 function doPost(e) {
@@ -29,7 +29,7 @@ function doPost(e) {
       sh.appendRow([
         body.date,
         Utilities.formatDate(new Date(r.at), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss'),
-        r.name, r.dept, r.joinDate || '', r.correct, r.total, r.score, r.duration, mmss, topics,
+        r.name, r.dept, r.startedAt ? Utilities.formatDate(new Date(r.startedAt), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss') : '', r.correct, r.total, r.score, r.duration, mmss, topics,
       ]);
     } finally {
       lock.releaseLock();

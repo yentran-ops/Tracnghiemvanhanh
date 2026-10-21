@@ -6,6 +6,7 @@
   const ic = (n, c = '') => `<svg class="i ${c}"><use href="/icons.svg#${n}"/></svg>`;
   const fmtT = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const fmtD = (d) => (d ? d.split('-').reverse().join('/') : '');
+  const fmtHM = (t) => new Date(t).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   const WD = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
   const fmtDay = (d) => `${WD[new Date(d + 'T00:00:00').getDay()]}, ${fmtD(d)}`;
   const norm = (s) => String(s || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -77,7 +78,6 @@
   let dept = S.user.dept || '';
   deptSeg($('#deptSeg'), dept, (d) => (dept = d));
   form.name.value = S.user.name || '';
-  form.joinDate.value = S.user.joinDate || '';
   function msg(el, text, info) { el.hidden = !text; el.innerHTML = text || ''; el.classList.toggle('info', !!info); }
 
   form.addEventListener('submit', async (e) => {
@@ -87,7 +87,7 @@
     if (name.length < 2) return msg($('#loginMsg'), 'Vui lòng nhập họ và tên.');
     if (!dept) return msg($('#loginMsg'), 'Vui lòng chọn phòng ban.');
     if (!/^\d{4}$/.test(pin)) return msg($('#loginMsg'), 'Mã PIN gồm đúng 4 chữ số.');
-    S.user = { name, dept, joinDate: form.joinDate.value };
+    S.user = { name, dept };
     store.set('tng_user', S.user);
     const btn = $('#startBtn'); btn.disabled = true; btn.innerHTML = 'Đang tải đề…';
     try {
@@ -301,7 +301,7 @@
     $('#podium').innerHTML = order.map((i) => `<div class="pod p${i + 1}"><div style="position:relative;width:max-content;margin:0 auto">${avatar(top[i].name)}${medal(i)}</div><b>${esc(top[i].name)}</b><small>${esc(top[i].dept)}</small><div class="s">${top[i].score}</div><small>${top[i].correct}/${top[i].total} câu · ${day ? fmtT(top[i].duration) : `${top[i].days} ngày`}</small></div>`).join('');
 
     $('#deptTabs').innerHTML = ['all', ...DEPTS].map((d) => `<button data-d="${esc(d)}" class="${S.deptFilter === d ? 'active' : ''}">${d === 'all' ? 'Tất cả' : esc(d)}</button>`).join('');
-    $('#bRows').innerHTML = rows.map((r, i) => `<tr class="${isMe(r) ? 'me' : ''}"><td>${medal(i)}</td><td><div class="namecell">${avatar(r.name)}<div><b>${esc(r.name)}</b>${r.joinDate ? `<div class="small muted">Vào làm ${fmtD(r.joinDate)}</div>` : ''}</div></div></td><td><span class="tag">${esc(r.dept)}</span></td><td class="r col-days">${r.days || 1}</td><td class="r">${r.correct}/${r.total}</td><td class="r"><b>${r.score}</b></td><td class="r">${fmtT(r.duration)}</td></tr>`).join('');
+    $('#bRows').innerHTML = rows.map((r, i) => `<tr class="${isMe(r) ? 'me' : ''}"><td>${medal(i)}</td><td><div class="namecell">${avatar(r.name)}<div><b>${esc(r.name)}</b>${r.startedAt && (r.days || 1) === 1 ? `<div class="small muted">Bắt đầu ${fmtHM(r.startedAt)}</div>` : ''}</div></div></td><td><span class="tag">${esc(r.dept)}</span></td><td class="r col-days">${r.days || 1}</td><td class="r">${r.correct}/${r.total}</td><td class="r"><b>${r.score}</b></td><td class="r">${fmtT(r.duration)}</td></tr>`).join('');
     $('#bEmpty').hidden = rows.length > 0;
 
     const dep = DEPTS.map((d) => { const rs = all.filter((r) => r.dept === d); return { d, n: rs.length, avg: rs.length ? rs.reduce((s, r) => s + r.score, 0) / rs.length : 0 }; }).sort((a, b) => b.avg - a.avg);
@@ -334,8 +334,8 @@
   });
   $('#bCsv').onclick = () => {
     if (!S.board?.rows.length) return;
-    const head = ['Hạng', 'Họ tên', 'Phòng ban', 'Ngày vào làm', 'Số ngày tham gia', 'Số câu đúng', 'Tổng câu', 'Điểm', 'Thời gian (giây)', 'Lần nộp gần nhất'];
-    const lines = S.board.rows.map((r, i) => [i + 1, r.name, r.dept, fmtD(r.joinDate), r.days || 1, r.correct, r.total, r.score, r.duration, new Date(r.at).toLocaleString('vi-VN')]);
+    const head = ['Hạng', 'Họ tên', 'Phòng ban', 'Giờ bắt đầu', 'Số ngày tham gia', 'Số câu đúng', 'Tổng câu', 'Điểm', 'Thời gian (giây)', 'Lần nộp gần nhất'];
+    const lines = S.board.rows.map((r, i) => [i + 1, r.name, r.dept, r.startedAt ? new Date(r.startedAt).toLocaleString('vi-VN') : '', r.days || 1, r.correct, r.total, r.score, r.duration, new Date(r.at).toLocaleString('vi-VN')]);
     const csv = '﻿' + [head, ...lines].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -366,7 +366,7 @@
       $('#mineLogin').hidden = true; $('#mineList').hidden = false;
       $('#meAvatar').outerHTML = avatar(j.user.name).replace('class="avatar"', 'class="avatar" id="meAvatar"');
       $('#meName').textContent = j.user.name;
-      $('#meDept').textContent = j.user.dept + (j.user.joinDate ? ` · Vào làm ${fmtD(j.user.joinDate)}` : '');
+      $('#meDept').textContent = j.user.dept;
       const h = j.history, n = h.length;
       const avg = n ? h.reduce((s, r) => s + r.score, 0) / n : 0;
       $('#meStats').innerHTML = [

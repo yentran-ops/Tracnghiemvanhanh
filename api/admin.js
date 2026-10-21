@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       const fails = await getJSONMany(uks.map((k) => `pinfail:${d}:${k}`));
       return res.json({
         users: uks.map((uk, i) => users[i] && ({
-          uk, name: users[i].name, dept: users[i].dept, joinDate: users[i].joinDate || '', createdAt: users[i].createdAt,
+          uk, name: users[i].name, dept: users[i].dept, startedAt: sess[i] ? sess[i].startedAt || 0 : 0, endedAt: sess[i]?.result ? sess[i].result.at : 0, createdAt: users[i].createdAt,
           hasPin: Boolean(users[i].pinHash), today: sess[i] ? (sess[i].result ? 'done' : 'doing') : 'none', fails: fails[i] || 0,
         })).filter(Boolean).sort((x, y) => x.dept.localeCompare(y.dept) || x.name.localeCompare(y.name)),
       });
@@ -206,9 +206,9 @@ export default async function handler(req, res) {
         if (!Number.isInteger(correct) || correct < 0 || correct > total) return res.status(400).json({ error: `Số câu đúng phải từ 0 đến ${total}.` });
         if (!Number.isInteger(duration) || duration < 0 || duration > 180 * 60) return res.status(400).json({ error: 'Thời gian làm bài phải từ 0 đến 180 phút.' });
         const at = d === today() ? Date.now() : new Date(d + 'T05:00:00Z').getTime();
-        const result = { name: u.name, dept: u.dept, joinDate: u.joinDate || '', correct, total, score: Math.round((correct / total) * 1000) / 10, duration, at, topics: {} };
+        const result = { name: u.name, dept: u.dept, correct, total, score: Math.round((correct / total) * 1000) / 10, duration, at, startedAt: at - duration * 1000, topics: {} };
         await hset(`lb:${d}`, uk, result);
-        if (d === today()) await setJSON(`sess:${d}:${uk}`, { name: u.name, dept: u.dept, startedAt: at, items: [], result }, 60 * 60 * 48);
+        if (d === today()) await setJSON(`sess:${d}:${uk}`, { name: u.name, dept: u.dept, startedAt: result.startedAt, items: [], result }, 60 * 60 * 48);
         return res.json({ ok: true, result });
       }
       default:

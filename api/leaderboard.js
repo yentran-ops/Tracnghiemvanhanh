@@ -30,9 +30,9 @@ export default async function handler(req, res) {
       const agg = new Map();
       lists.flat().forEach((r) => {
         const k = userKey(r.name, r.dept);
-        const a = agg.get(k) || { name: r.name, dept: r.dept, joinDate: '', correct: 0, total: 0, duration: 0, days: 0, at: 0, topics: {} };
+        const a = agg.get(k) || { name: r.name, dept: r.dept, startedAt: 0, correct: 0, total: 0, duration: 0, days: 0, at: 0, topics: {} };
         a.correct += r.correct; a.total += r.total; a.duration += r.duration; a.days++;
-        a.at = Math.max(a.at, r.at); if (r.joinDate) a.joinDate = r.joinDate;
+        a.at = Math.max(a.at, r.at); if (r.at >= a.at && r.startedAt) a.startedAt = r.startedAt;
         Object.entries(r.topics || {}).forEach(([tp, [c, n]]) => { a.topics[tp] ||= [0, 0]; a.topics[tp][0] += c; a.topics[tp][1] += n; });
         agg.set(k, a);
       });
