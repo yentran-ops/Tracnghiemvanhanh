@@ -180,6 +180,34 @@
       <div class="table-wrap"><table class="tbl"><thead><tr><th>Nhân viên</th><th>Phòng ban</th><th class="r">Hiện tại</th><th>Số câu đúng mới</th><th></th></tr></thead><tbody id="eRows"></tbody></table></div>
       <p class="empty" id="eEmpty" hidden>Không có kết quả nào trong ngày này.</p>
     </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Bộ đề cho nhân viên</h3>
+      <p class="muted small" style="margin:-6px 0 12px">Chọn nhân viên, chọn câu hỏi và khoảng ngày áp dụng. Trong thời gian đó nhân viên được chọn làm đúng bộ câu này (thứ tự câu và đáp án vẫn đảo); điểm ghi nhận như bình thường. Ngoài thời gian áp dụng hoặc khi tắt, nhân viên làm đề ngẫu nhiên như thường. Thay đổi áp dụng cho lượt làm bài bắt đầu sau khi lưu.</p>
+      <div id="gList"></div>
+      <button type="button" class="btn ghost" id="gNew" style="margin-top:8px">+ Tạo bộ đề</button>
+      <div id="gForm" hidden style="border:1px dashed var(--line,#d6dde5);border-radius:10px;padding:12px;margin-top:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <label style="margin:0;flex:1;min-width:200px">Tên bộ đề<input id="gName" maxlength="80" placeholder="VD: Nhân viên mới – 20 câu dễ"></label>
+          <label style="margin:0">Từ ngày<input type="date" id="gFrom"></label>
+          <label style="margin:0">Đến ngày<input type="date" id="gTo"></label>
+        </div>
+        <div class="two" style="margin-top:12px">
+          <div>
+            <b>Nhân viên</b> <span class="muted small" id="gUCount"></span>
+            <div style="display:flex;gap:6px;margin:6px 0"><input id="gUSearch" placeholder="Tìm tên / phòng ban"><button type="button" class="btn ghost sm" id="gUAll">Chọn tất cả đang lọc</button><button type="button" class="btn ghost sm" id="gUNone">Bỏ chọn</button></div>
+            <div id="gUsers" style="max-height:300px;overflow:auto;border:1px solid var(--line,#e3e8ee);border-radius:8px;padding:6px"></div>
+          </div>
+          <div>
+            <b>Câu hỏi</b> <span class="muted small" id="gQCount"></span>
+            <div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap"><input id="gQSearch" placeholder="Tìm nội dung" style="flex:1;min-width:140px"><select id="gQSet"></select><select id="gQLv"><option value="">Mọi độ khó</option><option value="de">Dễ</option><option value="kho">Khó</option></select></div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap"><span class="small">Chọn ngẫu nhiên</span><input type="number" id="gRandN" value="20" min="1" max="100" style="width:70px"><span class="small">câu từ danh sách đang lọc</span><button type="button" class="btn ghost sm" id="gRand">Chọn</button><button type="button" class="btn ghost sm" id="gQNone">Bỏ chọn hết</button><label class="small" style="margin:0"><input type="checkbox" id="gQOnly"> Chỉ hiện câu đã chọn</label></div>
+            <div id="gQs" style="max-height:300px;overflow:auto;border:1px solid var(--line,#e3e8ee);border-radius:8px;padding:6px"></div>
+          </div>
+        </div>
+        <div id="gMsg" class="msg" hidden style="margin-top:8px"></div>
+        <div class="modal-act"><button type="button" class="btn ghost" id="gCancel">Hủy</button><button type="button" class="btn primary" id="gSave">Lưu bộ đề</button></div>
+      </div>
+    </div>
   </section>
 </main>
 

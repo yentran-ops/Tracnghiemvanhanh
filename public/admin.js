@@ -99,7 +99,7 @@
       f.quizSize.max = Math.min(j.limits.quizMax, j.bankSize);
       $('#sQHint').textContent = `Ngân hàng hiện có ${j.bankSize} câu đang dùng (tối đa ${Math.min(j.limits.quizMax, j.bankSize)} câu/đề).`;
       $('#sSummary').textContent = `Hiện tại: ${j.quizSize} câu · ${Math.round(j.timeLimit / 60)} phút · ${j.depts.length} phòng ban`;
-      $('#sMsg').hidden = true; renderDepts(); renderSets(); loadEdit();
+      $('#sMsg').hidden = true; renderDepts(); renderSets(); loadEdit(); loadAssign();
     } catch (err) { toast(err.message); }
   }
   function renderDepts() {
@@ -196,6 +196,76 @@
     confirmBox(`Chỉnh điểm của ${r.name}?`, `Ngày ${fmtD(eDay)}: ${r.correct}/${r.total} (${r.score}) → ${correct}/${r.total} (${sc}). Bảng xếp hạng sẽ cập nhật theo điểm mới.`,
       async () => { try { await api('editScore', { date: eDay, uk, correct }); toast('Đã cập nhật điểm'); loadEdit(); } catch (err) { toast(err.message); } }, 'Lưu điểm');
   });
+
+  // ---------- Bộ đề cho nhân viên (trong tab Cài đặt) ----------
+  let gList = [], gUsers = [], gToday = '', gEdit = null, gSelU = new Set(), gSelQ = new Set();
+  async function loadAssign() {
+    try {
+      const [j, u] = await Promise.all([api('assign'), api('users')]);
+      gList = j.list; gToday = j.today; gUsers = u.users;
+      if (!bank.length) await loadBank();
+      renderAssign();
+    } catch (err) { toast(err.message); }
+  }
+  const gStatus = (a) => (!a.active ? ['none', 'Đã tắt'] : a.to < gToday ? ['none', 'Đã hết hạn'] : a.from > gToday ? ['doing', 'Chưa tới ngày'] : ['done', 'Đang áp dụng']);
+  function renderAssign() {
+    $('#gList').innerHTML = gList.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Bộ đề</th><th>Thời gian</th><th class="r">Nhân viên</th><th class="r">Câu hỏi</th><th>Trạng thái</th><th></th></tr></thead><tbody>${
+      [...gList].sort((x, y) => y.at - x.at).map((a) => { const st = gStatus(a); const nh = a.qids.filter((id) => (bank.find((q) => q.id === id) || {}).lv === 'kho').length; return `<tr>
+        <td><b>${esc(a.name)}</b></td><td>${fmtD(a.from)} – ${fmtD(a.to)}</td><td class="r">${a.uks.length}</td><td class="r">${a.qids.length} <span class="muted small">(${a.qids.length - nh} dễ, ${nh} khó)</span></td>
+        <td><span class="st ${st[0]}">${st[1]}</span></td>
+        <td class="r"><button type="button" class="btn ghost sm" data-g="edit" data-id="${a.id}">Sửa</button> <button type="button" class="btn ghost sm" data-g="toggle" data-id="${a.id}">${a.active ? 'Tắt' : 'Bật'}</button> <button type="button" class="btn danger sm" data-g="del" data-id="${a.id}">Xóa</button></td></tr>`; }).join('')
+    }</tbody></table></div>` : '<p class="muted small">Chưa có bộ đề nào – mọi nhân viên đang làm đề ngẫu nhiên.</p>';
+  }
+  $('#gList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-g]'); if (!b) return;
+    const a = gList.find((x) => x.id === b.dataset.id);
+    if (b.dataset.g === 'edit') openAssign(a);
+    if (b.dataset.g === 'toggle') api('toggleAssign', { id: a.id, active: !a.active }).then(() => { toast(a.active ? 'Đã tắt bộ đề' : 'Đã bật bộ đề'); loadAssign(); }).catch((err) => toast(err.message));
+    if (b.dataset.g === 'del') confirmBox(`Xóa bộ đề "${a.name}"?`, 'Nhân viên trong bộ đề sẽ quay lại làm đề ngẫu nhiên. Kết quả đã làm vẫn được giữ.', async () => { try { await api('deleteAssign', { id: a.id }); toast('Đã xóa bộ đề'); loadAssign(); } catch (err) { toast(err.message); } }, 'Xóa');
+  });
+  function openAssign(a) {
+    gEdit = a || null; gSelU = new Set(a ? a.uks : []); gSelQ = new Set(a ? a.qids : []);
+    $('#gName').value = a ? a.name : ''; $('#gFrom').value = a ? a.from : gToday; $('#gTo').value = a ? a.to : gToday;
+    $('#gQSet').innerHTML = '<option value="">Mọi bộ câu hỏi</option>' + META.sets.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+    $('#gMsg').hidden = true; $('#gForm').hidden = false; renderGU(); renderGQ();
+    $('#gForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  const gFilterU = () => { const s = $('#gUSearch').value.trim().toLowerCase(); return gUsers.filter((u) => !s || (u.name + ' ' + u.dept).toLowerCase().includes(s)); };
+  function renderGU() {
+    $('#gUsers').innerHTML = gFilterU().map((u) => `<label class="small" style="display:flex;gap:6px;align-items:center;margin:2px 0"><input type="checkbox" data-gu="${esc(u.uk)}" ${gSelU.has(u.uk) ? 'checked' : ''}> ${esc(u.name)} <span class="tag">${esc(u.dept)}</span></label>`).join('') || '<p class="muted small">Chưa có nhân viên nào đăng nhập.</p>';
+    $('#gUCount').textContent = `· đã chọn ${gSelU.size}`;
+  }
+  const gFilterQ = () => {
+    const s = $('#gQSearch').value.trim().toLowerCase(), st = $('#gQSet').value, lv = $('#gQLv').value, only = $('#gQOnly').checked;
+    return bank.filter((q) => !q.disabled && (!st || (q.set || 'quytrinh') === st) && (!lv || (lv === 'kho') === (q.lv === 'kho')) && (!only || gSelQ.has(q.id)) && (!s || (q.q + ' ' + q.topic).toLowerCase().includes(s)));
+  };
+  function renderGQ() {
+    const list = gFilterQ();
+    $('#gQs').innerHTML = list.slice(0, 400).map((q) => `<label class="small" style="display:flex;gap:6px;align-items:flex-start;margin:3px 0"><input type="checkbox" data-gq="${q.id}" ${gSelQ.has(q.id) ? 'checked' : ''}><span>${q.lv === 'kho' ? '<span class="badge h">Khó</span> ' : ''}${esc(q.q)} <span class="muted">· ${esc(q.topic)}</span></span></label>`).join('') + (list.length > 400 ? `<p class="muted small">… còn ${list.length - 400} câu, hãy lọc hẹp hơn.</p>` : '') || '<p class="muted small">Không có câu phù hợp.</p>';
+    const nh = [...gSelQ].filter((id) => (bank.find((q) => q.id === id) || {}).lv === 'kho').length;
+    $('#gQCount').textContent = `· đã chọn ${gSelQ.size} (${gSelQ.size - nh} dễ, ${nh} khó)`;
+  }
+  $('#gUsers').addEventListener('change', (e) => { const c = e.target.closest('[data-gu]'); if (!c) return; c.checked ? gSelU.add(c.dataset.gu) : gSelU.delete(c.dataset.gu); $('#gUCount').textContent = `· đã chọn ${gSelU.size}`; });
+  $('#gQs').addEventListener('change', (e) => { const c = e.target.closest('[data-gq]'); if (!c) return; c.checked ? gSelQ.add(c.dataset.gq) : gSelQ.delete(c.dataset.gq); renderGQ(); });
+  $('#gUSearch').addEventListener('input', renderGU);
+  ['#gQSearch', '#gQSet', '#gQLv', '#gQOnly'].forEach((s) => $(s).addEventListener('input', renderGQ));
+  $('#gUAll').onclick = () => { gFilterU().forEach((u) => gSelU.add(u.uk)); renderGU(); };
+  $('#gUNone').onclick = () => { gSelU.clear(); renderGU(); };
+  $('#gQNone').onclick = () => { gSelQ.clear(); renderGQ(); };
+  $('#gRand').onclick = () => {
+    const n = Math.max(1, Math.min(100, Number($('#gRandN').value) || 20));
+    const pool = gFilterQ().filter((q) => !gSelQ.has(q.id)).sort(() => Math.random() - 0.5);
+    pool.slice(0, n).forEach((q) => gSelQ.add(q.id)); renderGQ();
+    if (pool.length < n) toast(`Danh sách đang lọc chỉ còn ${pool.length} câu`);
+  };
+  $('#gNew').onclick = () => openAssign(null);
+  $('#gCancel').onclick = () => ($('#gForm').hidden = true);
+  $('#gSave').onclick = async () => {
+    try {
+      await api('saveAssign', { id: gEdit?.id, name: $('#gName').value, uks: [...gSelU], qids: [...gSelQ], from: $('#gFrom').value, to: $('#gTo').value, active: gEdit ? gEdit.active : true });
+      $('#gForm').hidden = true; toast('Đã lưu bộ đề'); loadAssign();
+    } catch (err) { const m = $('#gMsg'); m.hidden = false; m.textContent = err.message; }
+  };
 
   // ---------- Câu hỏi ----------
   async function loadBank() { const j = await api('bank'); bank = j.questions; if (!j.persistent) toast('⚠ Chưa kết nối Redis – thay đổi sẽ không được lưu lâu dài'); }

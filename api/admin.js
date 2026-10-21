@@ -5,6 +5,7 @@ import { getSettings, validSettings, saveSettings, LIMITS } from '../lib/setting
 import { getJSON, getJSONMany, setJSON, del, hdel, hset, hgetall, hincrMany, smembers, hasDb } from '../lib/store.js';
 import { today, clean, rankRows, userKey, qStatIncr } from '../lib/util.js';
 import { listCustomDocs, saveCustomDoc, deleteCustomDoc } from '../lib/docs-store.js';
+import { listAssign, saveAssign, setAssignActive, deleteAssign } from '../lib/assign.js';
 
 const BASE_IDS = new Set(QUESTIONS.map((q) => q.id));
 
@@ -52,6 +53,23 @@ export default async function handler(req, res) {
       const setCounts = {}, hardCounts = {};
       bank.forEach((q) => { const k = q.set || 'quytrinh'; setCounts[k] = (setCounts[k] || 0) + 1; if (q.lv === 'kho') hardCounts[k] = (hardCounts[k] || 0) + 1; });
       return res.json({ ...s, limits: LIMITS, bankSize: bank.length, setCounts, hardCounts });
+    }
+    if (req.method === 'GET' && action === 'assign') {
+      return res.json({ list: await listAssign(), today: today() });
+    }
+    if (req.method === 'POST' && action === 'saveAssign') {
+      const ids = new Set((await getBank()).map((q) => q.id));
+      const r = await saveAssign(b, ids);
+      if (typeof r === 'string') return res.status(400).json({ error: r });
+      return res.json({ ok: true, list: r });
+    }
+    if (req.method === 'POST' && action === 'toggleAssign') {
+      if (!(await setAssignActive(String(b.id || ''), b.active))) return res.status(404).json({ error: 'Không tìm thấy đề.' });
+      return res.json({ ok: true });
+    }
+    if (req.method === 'POST' && action === 'deleteAssign') {
+      if (!(await deleteAssign(String(b.id || '')))) return res.status(404).json({ error: 'Không tìm thấy đề.' });
+      return res.json({ ok: true });
     }
     if (req.method === 'GET' && action === 'docs') {
       return res.json({ docs: await listCustomDocs() });

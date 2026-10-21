@@ -4,6 +4,7 @@ import { getJSON, setJSON, dbRequiredButMissing } from '../lib/store.js';
 import { verifyUser } from '../lib/auth.js';
 import { today, shuffle, publicQuestions } from '../lib/util.js';
 import { getSettings, pickQuestions } from '../lib/settings.js';
+import { activeAssign } from '../lib/assign.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -30,7 +31,11 @@ export default async function handler(req, res) {
     if (!s) {
       const bank = await getBank();
       if (!bank.length) return res.status(503).json({ error: 'Ngân hàng câu hỏi đang trống.' });
-      const picked = pickQuestions(bank, cfg, shuffle);
+      // Nhân viên có đề chỉ định đang áp dụng thì làm đúng bộ câu đó, không thì bốc ngẫu nhiên như thường
+      const asg = await activeAssign(uk, date);
+      const byId = new Map(bank.map((q) => [q.id, q]));
+      const fixed = asg ? asg.qids.map((id) => byId.get(id)).filter(Boolean) : [];
+      const picked = fixed.length ? shuffle(fixed) : pickQuestions(bank, cfg, shuffle);
       if (!picked.length) return res.status(503).json({ error: 'Các bộ câu hỏi đang bật chưa có câu nào. Vui lòng báo quản trị viên.' });
       const items = picked.map((q) => ({ id: q.id, topic: q.topic, ref: q.ref, q: q.q, o: q.o, perm: shuffle(q.o.map((_, i) => i)) }));
       s = { name: user.name, dept: user.dept, joinDate: joinDate || user.joinDate || '', date, token: crypto.randomUUID(), startedAt: now, timeLimit: cfg.timeLimit, items };
