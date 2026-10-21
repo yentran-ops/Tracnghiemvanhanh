@@ -162,6 +162,24 @@
       </div>
       <div class="set-actions"><div id="sMsg" class="msg" hidden></div><button class="btn primary big">Lưu cài đặt</button></div>
     </form>
+    <div class="card" style="margin-top:16px">
+      <h3>Chỉnh sửa điểm số</h3>
+      <p class="muted small" style="margin:-6px 0 12px">Chọn ngày, nhập lại <b>số câu đúng</b> rồi bấm Lưu. Điểm (%) tự tính lại; bảng xếp hạng ngày/tuần/tháng cập nhật ngay. Dòng đã ghi vào Google Sheets không thay đổi.</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><label style="margin:0">Ngày <input type="date" id="eDate"></label><input id="eSearch" placeholder="Tìm tên nhân viên" style="max-width:240px"></div>
+      <div class="add-score" style="border:1px dashed var(--line,#d6dde5);border-radius:10px;padding:12px;margin-bottom:12px">
+        <b>+ Thêm điểm</b> <span class="muted small">(cho nhân viên chưa làm bài trong ngày đã chọn)</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px">
+          <label style="margin:0">Nhân viên<select id="aUser" style="min-width:220px"></select></label>
+          <label style="margin:0">Số câu đúng<input type="number" id="aCorrect" min="0" style="width:90px"></label>
+          <label style="margin:0">Tổng số câu<input type="number" id="aTotal" min="1" max="200" style="width:90px"></label>
+          <label style="margin:0">Thời gian (phút)<input type="number" id="aMin" min="0" max="180" value="0" style="width:80px"></label>
+          <label style="margin:0">Giây<input type="number" id="aSec" min="0" max="59" value="0" style="width:70px"></label>
+          <button type="button" class="btn primary sm" id="aAdd">Thêm điểm</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="tbl"><thead><tr><th>Nhân viên</th><th>Phòng ban</th><th class="r">Hiện tại</th><th>Số câu đúng mới</th><th></th></tr></thead><tbody id="eRows"></tbody></table></div>
+      <p class="empty" id="eEmpty" hidden>Không có kết quả nào trong ngày này.</p>
+    </div>
   </section>
 </main>
 

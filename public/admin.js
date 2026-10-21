@@ -99,7 +99,7 @@
       f.quizSize.max = Math.min(j.limits.quizMax, j.bankSize);
       $('#sQHint').textContent = `Ngân hàng hiện có ${j.bankSize} câu đang dùng (tối đa ${Math.min(j.limits.quizMax, j.bankSize)} câu/đề).`;
       $('#sSummary').textContent = `Hiện tại: ${j.quizSize} câu · ${Math.round(j.timeLimit / 60)} phút · ${j.depts.length} phòng ban`;
-      $('#sMsg').hidden = true; renderDepts(); renderSets();
+      $('#sMsg').hidden = true; renderDepts(); renderSets(); loadEdit();
     } catch (err) { toast(err.message); }
   }
   function renderDepts() {
@@ -149,6 +149,52 @@
       await api('saveSettings', { quizSize: f.quizSize.value, minutes: f.minutes.value, hardPct: f.hardPct.value, depts: sDepts, sets: sSets });
       toast('Đã lưu cài đặt'); loadSettings();
     } catch (err) { const m = $('#sMsg'); m.hidden = false; m.textContent = err.message; }
+  });
+
+  // ---------- Chỉnh sửa điểm số (trong tab Cài đặt) ----------
+  let eRows = [], eDay = '';
+  async function loadEdit() {
+    try {
+      const j = await api('results' + ($('#eDate').value ? `&date=${$('#eDate').value}` : ''));
+      eRows = j.rows; eDay = j.date; $('#eDate').value = j.date; $('#eDate').max = j.today; renderEdit();
+      const us = (await api('users')).users, has = new Set(eRows.map((r) => r.uk));
+      const free = us.filter((u) => !has.has(u.uk));
+      $('#aUser').innerHTML = free.length ? free.map((u) => `<option value="${esc(u.uk)}">${esc(u.name)} – ${esc(u.dept)}</option>`).join('') : '<option value="">(Tất cả đã có kết quả)</option>';
+      if (!$('#aTotal').value) $('#aTotal').value = $('#sForm').quizSize.value || 30;
+    } catch (err) { toast(err.message); }
+  }
+  $('#aAdd').onclick = () => {
+    const uk = $('#aUser').value; if (!uk) return toast('Chưa chọn nhân viên');
+    const name = $('#aUser').selectedOptions[0].textContent;
+    const correct = Number($('#aCorrect').value), total = Number($('#aTotal').value);
+    const duration = (Number($('#aMin').value) || 0) * 60 + (Number($('#aSec').value) || 0);
+    if ($('#aCorrect').value === '') return toast('Nhập số câu đúng');
+    const sc = total ? Math.round((correct / total) * 1000) / 10 : 0;
+    confirmBox(`Thêm điểm cho ${name}?`, `Ngày ${fmtD(eDay)}: ${correct}/${total} (${sc}) · thời gian ${fmtDur(duration)}.${eDay === $('#eDate').max ? ' Nhân viên sẽ được tính là đã làm bài hôm nay.' : ''}`,
+      async () => { try { await api('addScore', { date: eDay, uk, correct, total, duration }); toast('Đã thêm điểm'); $('#aCorrect').value = ''; loadEdit(); } catch (err) { toast(err.message); } }, 'Thêm điểm');
+  };
+  function renderEdit() {
+    const s = $('#eSearch').value.trim().toLowerCase();
+    const list = eRows.filter((r) => !s || r.name.toLowerCase().includes(s));
+    $('#eRows').innerHTML = list.map((r) => `<tr>
+      <td><b>${esc(r.name)}</b></td>
+      <td><span class="tag">${esc(r.dept)}</span></td>
+      <td class="r">${r.correct}/${r.total} · ${r.score}</td>
+      <td><input type="number" min="0" max="${r.total}" value="${r.correct}" data-e="c" data-k="${esc(r.uk)}" style="width:80px"> / ${r.total}</td>
+      <td class="r"><button type="button" class="btn ghost sm" data-esave="${esc(r.uk)}">Lưu</button></td></tr>`).join('');
+    $('#eEmpty').hidden = eRows.length > 0;
+  }
+  $('#eDate').addEventListener('change', loadEdit);
+  $('#eSearch').addEventListener('input', renderEdit);
+  $('#eRows').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-esave]'); if (!b) return;
+    const uk = b.dataset.esave, r = eRows.find((x) => x.uk === uk);
+    const tr = b.closest('tr');
+    const correct = Number(tr.querySelector('[data-e="c"]').value);
+    if (correct === r.correct) return toast('Số câu đúng chưa thay đổi');
+    const sc = Math.round((correct / r.total) * 1000) / 10;
+    confirmBox(`Chỉnh điểm của ${r.name}?`, `Ngày ${fmtD(eDay)}: ${r.correct}/${r.total} (${r.score}) → ${correct}/${r.total} (${sc}). Bảng xếp hạng sẽ cập nhật theo điểm mới.`,
+      async () => { try { await api('editScore', { date: eDay, uk, correct }); toast('Đã cập nhật điểm'); loadEdit(); } catch (err) { toast(err.message); } }, 'Lưu điểm');
   });
 
   // ---------- Câu hỏi ----------

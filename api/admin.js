@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { QUESTIONS } from '../lib/questions.js';
 import { getBank, loadEdits, saveEdits } from '../lib/bank.js';
 import { getSettings, validSettings, saveSettings, LIMITS } from '../lib/settings.js';
-import { getJSON, getJSONMany, setJSON, del, hdel, hgetall, hincrMany, smembers, hasDb } from '../lib/store.js';
+import { getJSON, getJSONMany, setJSON, del, hdel, hset, hgetall, hincrMany, smembers, hasDb } from '../lib/store.js';
 import { today, clean, rankRows, userKey, qStatIncr } from '../lib/util.js';
 import { listCustomDocs, saveCustomDoc, deleteCustomDoc } from '../lib/docs-store.js';
 
@@ -161,6 +161,37 @@ export default async function handler(req, res) {
           await del(`rev:${d}:${uk}`);
         }
         return res.json({ ok: true, deleted: uks.length });
+      }
+      // Chỉnh điểm 1 kết quả: nhập lại số câu đúng, điểm tự tính lại; lưu vết điểm gốc và lý do.
+      case 'editScore': {
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(b.date || '') ? b.date : today();
+        const uk = String(b.uk || '');
+        const r = (await hgetall(`lb:${d}`)).find((x) => userKey(x.name, x.dept) === uk);
+        if (!r) return res.status(404).json({ error: 'Không tìm thấy kết quả cần chỉnh.' });
+        const correct = Number(b.correct);
+        if (!Number.isInteger(correct) || correct < 0 || correct > r.total) return res.status(400).json({ error: `Số câu đúng phải là số nguyên từ 0 đến ${r.total}.` });
+        const next = { ...r, correct, score: Math.round((correct / r.total) * 1000) / 10 };
+        delete next.edited;
+        await hset(`lb:${d}`, uk, next);
+        return res.json({ ok: true, result: next });
+      }
+      // Thêm điểm cho nhân viên chưa làm bài trong ngày (không có bài làm chi tiết, không ghi Google Sheet).
+      case 'addScore': {
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(b.date || '') ? b.date : today();
+        if (d > today()) return res.status(400).json({ error: 'Không thể thêm điểm cho ngày trong tương lai.' });
+        const uk = String(b.uk || '');
+        const u = await getJSON(`user:${uk}`);
+        if (!u) return res.status(404).json({ error: 'Không tìm thấy nhân viên.' });
+        if ((await hgetall(`lb:${d}`)).some((x) => userKey(x.name, x.dept) === uk)) return res.status(409).json({ error: 'Nhân viên này đã có kết quả trong ngày – hãy sửa điểm ở danh sách bên dưới.' });
+        const total = Number(b.total), correct = Number(b.correct), duration = Number(b.duration);
+        if (!Number.isInteger(total) || total < 1 || total > 200) return res.status(400).json({ error: 'Tổng số câu phải từ 1 đến 200.' });
+        if (!Number.isInteger(correct) || correct < 0 || correct > total) return res.status(400).json({ error: `Số câu đúng phải từ 0 đến ${total}.` });
+        if (!Number.isInteger(duration) || duration < 0 || duration > 180 * 60) return res.status(400).json({ error: 'Thời gian làm bài phải từ 0 đến 180 phút.' });
+        const at = d === today() ? Date.now() : new Date(d + 'T05:00:00Z').getTime();
+        const result = { name: u.name, dept: u.dept, joinDate: u.joinDate || '', correct, total, score: Math.round((correct / total) * 1000) / 10, duration, at, topics: {} };
+        await hset(`lb:${d}`, uk, result);
+        if (d === today()) await setJSON(`sess:${d}:${uk}`, { name: u.name, dept: u.dept, startedAt: at, items: [], result }, 60 * 60 * 48);
+        return res.json({ ok: true, result });
       }
       default:
         return res.status(400).json({ error: 'Thao tác không hợp lệ.' });
